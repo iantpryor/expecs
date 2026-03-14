@@ -16,8 +16,8 @@ namespace expecs
 		System() = default;
 		virtual ~System() = default;
 
-		virtual void entityAdded(Entity entity) {}
-		virtual void entityRemoved(Entity entity) {}
+		virtual void entityAdded(Entity /*entity*/) {}
+		virtual void entityRemoved(Entity /*entity*/) {}
 
 		const std::unordered_set<Entity>& getEntities() const { return _entities; }
 		Registry* getRegistry() const {return _registry; } 
