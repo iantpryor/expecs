@@ -70,6 +70,14 @@ namespace expecs
         EXPECT_EQ(_componentManager->getComponent<Position>(entity).x, 99.0f);
     }
 
+    TEST_F(expecs_ComponentManagerTest, hasComponent_ReturnsFalse_WhenTypeNotRegistered)
+    {
+        Entity entity = 42;
+        struct UnregisteredComponent {};
+
+        EXPECT_FALSE(_componentManager->hasComponent<UnregisteredComponent>(entity));
+    }
+
     TEST_F(expecs_ComponentManagerTest, hasComponent_ReturnsCorrectStatus)
     {
         Entity entity = 42;

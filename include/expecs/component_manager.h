@@ -79,6 +79,8 @@ namespace expecs
 		template<typename T>
 		bool hasComponent(Entity entity)
 		{
+			if (!_typeMap.contains(std::type_index(typeid(T))))
+				return false;
 			ComponentType componentTypeBit = _typeMap.at(std::type_index(typeid(T)));
 			auto componentPool = dynamic_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
