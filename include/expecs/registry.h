@@ -79,8 +79,8 @@ namespace expecs
         T& addComponent(Entity entity, const T& component)
         {
             auto signature = _entityManager->getSignature(entity);
-            signature |= (1 << _componentManager->getComponentType<T>());
-            
+            signature |= (Signature{1} << _componentManager->getComponentType<T>());
+
             _entityManager->setSignature(entity, signature);
 
             auto& cmpRef = _componentManager->addComponent(entity, component);
@@ -94,7 +94,7 @@ namespace expecs
         void removeComponent(Entity entity)
         {
             auto signature = _entityManager->getSignature(entity);
-            signature &= ~(1 << _componentManager->getComponentType<T>());
+            signature &= ~(Signature{1} << _componentManager->getComponentType<T>());
 
             _systemManager->entitySignatureChanged(entity, signature);
 

@@ -8,7 +8,7 @@
 namespace expecs
 {
 	using ComponentType = uint8_t;
-	constexpr uint8_t MAX_COMPONENTS = 32;
+	constexpr uint8_t MAX_COMPONENTS = 64;
 
 	class ComponentManager
 	{
@@ -23,7 +23,7 @@ namespace expecs
 
 			_typeMap[std::type_index(typeid(T))] = _currentComponentType;
 			Signature componentSignature = 0;
-			componentSignature |= (1 << _currentComponentType);
+			componentSignature |= (Signature{1} << _currentComponentType);
 
 			_currentComponentType++;
 
@@ -36,7 +36,7 @@ namespace expecs
 			Signature componentSignature = 0;
 			if (_typeMap.contains(std::type_index(typeid(T))))
 			{
-				componentSignature |= (1 << _typeMap.at(std::type_index(typeid(T))));
+				componentSignature |= (Signature{1} << _typeMap.at(std::type_index(typeid(T))));
 			}
 
 			return componentSignature;

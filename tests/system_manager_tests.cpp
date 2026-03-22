@@ -15,8 +15,8 @@ namespace expecs
 
             // Movement system requires Position and Velocity
             Signature movementSignature = 0;
-            movementSignature |= (1 << 0); // Position component bit
-            movementSignature |= (1 << 1); // Velocity component bit
+            movementSignature |= (Signature{1} <<0); // Position component bit
+            movementSignature |= (Signature{1} <<1); // Velocity component bit
 
             _movementSystem = _systemManager->registerSystem<MovementSystem>(movementSignature);
         }
@@ -41,8 +41,8 @@ namespace expecs
     {
         Entity entity = 42;
         Signature entitySignature = 0;
-        entitySignature |= (1 << 0); // Position
-        entitySignature |= (1 << 1); // Velocity
+        entitySignature |= (Signature{1} <<0); // Position
+        entitySignature |= (Signature{1} <<1); // Velocity
 
         _systemManager->entitySignatureChanged(entity, entitySignature);
 

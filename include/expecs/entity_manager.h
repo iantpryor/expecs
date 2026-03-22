@@ -9,7 +9,7 @@ namespace expecs
 	constexpr uint32_t MAX_ENTITIES = 100000;
 
 	using Entity = uint32_t;
-	using Signature = uint32_t;
+	using Signature = uint64_t;
 
 	class EntityManager
 	{
