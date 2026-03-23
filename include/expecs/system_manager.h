@@ -26,7 +26,7 @@ namespace expecs
         friend class SystemManager;
         friend class Registry;
         std::unordered_set<Entity> _entities;
-        Registry* _registry;
+        Registry* _registry = nullptr;
     };
 
     template <typename T>

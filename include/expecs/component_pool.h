@@ -17,7 +17,7 @@ namespace expecs
 
         virtual void entityDestroyed(Entity entity) = 0;
         virtual void removeComponent(Entity entity) = 0;
-        virtual bool hasComponent(Entity entity) = 0;
+        virtual bool hasComponent(Entity entity) const = 0;
     };
 
     template <typename T>
@@ -38,13 +38,13 @@ namespace expecs
             return _componentData.at(it->second);
         }
 
-        const std::vector<Entity> getEntitiesWithComponent()
+        std::vector<Entity> getEntitiesWithComponent() const
         {
             auto keyView = std::views::keys(_entityToIndexMap);
             return std::vector<Entity>{keyView.begin(), keyView.end()};
         }
 
-        bool hasComponent(Entity entity)
+        bool hasComponent(Entity entity) const override
         {
             return _entityToIndexMap.contains(entity);
         }

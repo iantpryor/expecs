@@ -43,7 +43,7 @@ namespace expecs
         }
 
         template <typename T>
-        ComponentType getComponentType()
+        ComponentType getComponentType() const
         {
             return _typeMap.at(std::type_index(typeid(T)));
         }
@@ -68,7 +68,7 @@ namespace expecs
         }
 
         template <typename T>
-        const std::vector<Entity> getEntitiesWithComponent()
+        std::vector<Entity> getEntitiesWithComponent() const
         {
             ComponentType componentTypeBit = _typeMap.at(std::type_index(typeid(T)));
             auto componentPool = dynamic_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
@@ -77,7 +77,7 @@ namespace expecs
         }
 
         template <typename T>
-        bool hasComponent(Entity entity)
+        bool hasComponent(Entity entity) const
         {
             if (!_typeMap.contains(std::type_index(typeid(T))))
                 return false;
@@ -87,7 +87,7 @@ namespace expecs
             return componentPool->hasComponent(entity);
         }
 
-        bool hasComponent(Entity entity, ComponentType componentType)
+        bool hasComponent(Entity entity, ComponentType componentType) const
         {
             return _componentPools.at(componentType)->hasComponent(entity);
         }

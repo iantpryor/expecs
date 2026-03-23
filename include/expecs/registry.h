@@ -59,7 +59,7 @@ namespace expecs
         }
 
         template <typename T>
-        const std::vector<Entity> getEntitiesWithComponent()
+        std::vector<Entity> getEntitiesWithComponent() const
         {
             return _componentManager->getEntitiesWithComponent<T>();
         }
