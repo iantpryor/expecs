@@ -40,6 +40,11 @@ namespace expecs
             return _entityManager->getSignature(entity);
         }
 
+        Signature registerComponentPool(std::type_index typeIndex, std::unique_ptr<ComponentPoolBase> pool)
+        {
+            return _componentManager->registerComponentPool(typeIndex, std::move(pool));
+        }
+
         template <typename T>
         Signature registerComponent()
         {

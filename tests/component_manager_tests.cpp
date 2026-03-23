@@ -18,6 +18,33 @@ namespace expecs
         std::unique_ptr<ComponentManager> _componentManager;
     };
 
+    TEST_F(expecs_ComponentManagerTest, registerComponentPool_AssignsUniqueSignature)
+    {
+        ComponentManager componentManager;
+
+        auto positionPool = std::make_unique<ComponentPool<Position>>();
+        auto velocityPool = std::make_unique<ComponentPool<Velocity>>();
+
+        Signature positionSignature = componentManager.registerComponentPool(std::type_index(typeid(Position)), std::move(positionPool));
+        Signature velocitySignature = componentManager.registerComponentPool(std::type_index(typeid(Velocity)), std::move(velocityPool));
+
+        EXPECT_NE(positionSignature, 0u);
+        EXPECT_NE(velocitySignature, 0u);
+        EXPECT_NE(positionSignature, velocitySignature);
+
+        // Each signature should be a single bit
+        EXPECT_EQ(positionSignature & (positionSignature - 1), 0u);
+        EXPECT_EQ(velocitySignature & (velocitySignature - 1), 0u);
+
+        // Pool should be functional
+        Entity entity = 42;
+        Position position(1.0f, 2.0f, 3.0f);
+        componentManager.addComponent(entity, position);
+
+        EXPECT_TRUE(componentManager.hasComponent<Position>(entity));
+        EXPECT_EQ(componentManager.getComponent<Position>(entity), position);
+    }
+
     TEST_F(expecs_ComponentManagerTest, registerComponentType_ReturnsValidSignature)
     {
         ComponentManager componentManager;

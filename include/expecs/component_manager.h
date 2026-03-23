@@ -16,6 +16,19 @@ namespace expecs
         ComponentManager() = default;
         ~ComponentManager() = default;
 
+        Signature registerComponentPool(std::type_index typeIndex, std::unique_ptr<ComponentPoolBase> pool)
+        {
+            _componentPools.push_back(std::move(pool));
+
+            _typeMap[typeIndex] = _currentComponentType;
+            Signature componentSignature = 0;
+            componentSignature |= (Signature{1} << _currentComponentType);
+
+            _currentComponentType++;
+
+            return componentSignature;
+        }
+
         template <typename T>
         Signature registerComponentType()
         {
