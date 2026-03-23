@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <typeindex>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -47,11 +48,25 @@ namespace expecs
             return dynamic_cast<T*>(_systemsMap[typeName].get());
         }
 
+        System* registerSystem(std::type_index typeIndex, Signature signature, std::unique_ptr<System> system)
+        {
+            const char* typeName = typeIndex.name();
+            _systemsMap[typeName] = std::move(system);
+            _systemSignatures[typeName] = signature;
+            return _systemsMap[typeName].get();
+        }
+
         template <DerivedFromSystem T>
         T* getSystem() const
         {
             const char* typeName = typeid(T).name();
             return dynamic_cast<T*>(_systemsMap.at(typeName).get());
+        }
+
+        System* getSystem(std::type_index typeIndex) const
+        {
+            const char* typeName = typeIndex.name();
+            return _systemsMap.at(typeName).get();
         }
 
         void entityDestroyed(Entity entity)

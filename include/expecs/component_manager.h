@@ -85,24 +85,15 @@ namespace expecs
         T& getComponent(Entity entity)
         {
             ComponentType componentTypeBit = _typeMap.at(std::type_index(typeid(T)));
-            auto componentPool = dynamic_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
+            auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
-            return componentPool->getComponent(entity);
+            return componentPool->get(entity);
         }
 
-        void* getComponentRaw(Entity entity, std::type_index typeIndex)
+        void* getComponent(Entity entity, std::type_index typeIndex)
         {
             ComponentType componentTypeBit = _typeMap.at(typeIndex);
-            return _componentPools[componentTypeBit]->getComponentRaw(entity);
-        }
-
-        template <typename T>
-        std::vector<Entity> getEntitiesWithComponent() const
-        {
-            ComponentType componentTypeBit = _typeMap.at(std::type_index(typeid(T)));
-            auto componentPool = dynamic_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
-
-            return componentPool->getEntitiesWithComponent();
+            return _componentPools[componentTypeBit]->getComponent(entity);
         }
 
         template <typename T>
@@ -111,7 +102,7 @@ namespace expecs
             if (!_typeMap.contains(std::type_index(typeid(T))))
                 return false;
             ComponentType componentTypeBit = _typeMap.at(std::type_index(typeid(T)));
-            auto componentPool = dynamic_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
+            auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
             return componentPool->hasComponent(entity);
         }
@@ -133,15 +124,15 @@ namespace expecs
         T& addComponent(Entity entity, const T& component)
         {
             ComponentType componentTypeBit = _typeMap.at(std::type_index(typeid(T)));
-            auto componentPool = dynamic_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
+            auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
-            return componentPool->addComponent(entity, component);
+            return componentPool->add(entity, component);
         }
 
-        void* addComponentRaw(Entity entity, std::type_index typeIndex, const void* data)
+        void* addComponent(Entity entity, std::type_index typeIndex, const void* data)
         {
             ComponentType componentTypeBit = _typeMap.at(typeIndex);
-            return _componentPools[componentTypeBit]->addComponentRaw(entity, data);
+            return _componentPools[componentTypeBit]->addComponent(entity, data);
         }
 
         template <typename T>
@@ -149,7 +140,7 @@ namespace expecs
         {
             ComponentType componentTypeBit = _typeMap.at(std::type_index(typeid(T)));
 
-            auto componentPool = dynamic_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
+            auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
             componentPool->removeComponent(entity);
         }
 
@@ -159,6 +150,30 @@ namespace expecs
 
             auto componentPool = _componentPools[componentTypeBit].get();
             componentPool->removeComponent(entity);
+        }
+
+        std::vector<Entity> getSmallestPoolEntities(Signature signature) const
+        {
+            ComponentPoolBase* smallest = nullptr;
+            size_t smallestSize = SIZE_MAX;
+
+            for (uint8_t bit = 0; bit < _currentComponentType; ++bit)
+            {
+                if (signature & (Signature{1} << bit))
+                {
+                    size_t poolSize = _componentPools[bit]->size();
+                    if (poolSize < smallestSize)
+                    {
+                        smallestSize = poolSize;
+                        smallest = _componentPools[bit].get();
+                    }
+                }
+            }
+
+            if (!smallest)
+                return {};
+
+            return smallest->getEntities();
         }
 
         void removeAllComponents(Entity entity)

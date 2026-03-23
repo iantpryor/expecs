@@ -90,12 +90,12 @@ namespace expecs
         EXPECT_TRUE(_componentManager->hasComponent<Position>(entity));
     }
 
-    TEST_F(expecs_ComponentManagerTest, addComponentRaw_StoresComponent)
+    TEST_F(expecs_ComponentManagerTest, addComponent_TypeErased_StoresComponent)
     {
         Entity entity = 42;
         Position position(1.0f, 2.0f, 3.0f);
 
-        void* ptr = _componentManager->addComponentRaw(entity, std::type_index(typeid(Position)), &position);
+        void* ptr = _componentManager->addComponent(entity, std::type_index(typeid(Position)), &position);
 
         ASSERT_NE(ptr, nullptr);
         auto* storedPosition = static_cast<Position*>(ptr);
@@ -118,14 +118,14 @@ namespace expecs
         EXPECT_EQ(_componentManager->getComponent<Position>(entity).x, 99.0f);
     }
 
-    TEST_F(expecs_ComponentManagerTest, getComponentRaw_ReturnsCorrectComponent)
+    TEST_F(expecs_ComponentManagerTest, getComponent_TypeErased_ReturnsCorrectComponent)
     {
         Entity entity = 42;
         Position position(10.0f, 20.0f, 30.0f);
 
         _componentManager->addComponent(entity, position);
 
-        void* ptr = _componentManager->getComponentRaw(entity, std::type_index(typeid(Position)));
+        void* ptr = _componentManager->getComponent(entity, std::type_index(typeid(Position)));
 
         ASSERT_NE(ptr, nullptr);
         auto* retrievedPosition = static_cast<Position*>(ptr);
@@ -183,22 +183,7 @@ namespace expecs
         EXPECT_FALSE(_componentManager->hasComponent<Position>(entity));
     }
 
-    TEST_F(expecs_ComponentManagerTest, getEntitiesWithComponent_ReturnsCorrectEntities)
-    {
-        Entity entity1 = 1;
-        Entity entity2 = 2;
-        Entity entity3 = 3;
 
-        _componentManager->addComponent(entity1, Position());
-        _componentManager->addComponent(entity2, Position());
-        _componentManager->addComponent(entity3, Velocity()); // Different component
-
-        auto entities = _componentManager->getEntitiesWithComponent<Position>();
-
-        EXPECT_EQ(entities.size(), 2);
-        EXPECT_TRUE(std::find(entities.begin(), entities.end(), entity1) != entities.end());
-        EXPECT_TRUE(std::find(entities.begin(), entities.end(), entity2) != entities.end());
-    }
 
     TEST_F(expecs_ComponentManagerTest, entityDestroyed_RemovesAllComponents)
     {

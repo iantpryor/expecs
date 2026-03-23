@@ -6,6 +6,15 @@
 
 namespace expecs
 {
+    class RenderSystem : public System
+    {
+    public:
+        void entityAdded(Entity entity) override { entitiesAdded.insert(entity); }
+        void entityRemoved(Entity entity) override { entitiesRemoved.insert(entity); }
+        std::unordered_set<Entity> entitiesAdded;
+        std::unordered_set<Entity> entitiesRemoved;
+    };
+
     class expecs_SystemManagerTest : public ::testing::Test
     {
     protected:
@@ -31,10 +40,32 @@ namespace expecs
         EXPECT_EQ(_movementSystem->getEntities().size(), 0u);
     }
 
+    TEST_F(expecs_SystemManagerTest, registerSystem_TypeErased_ReturnsValidSystem)
+    {
+        Signature systemSignature = (Signature{1} << 2);
+        auto system = std::make_unique<RenderSystem>();
+        auto* raw = system.get();
+
+        auto* registered = _systemManager->registerSystem(std::type_index(typeid(RenderSystem)), systemSignature, std::move(system));
+
+        EXPECT_EQ(registered, raw);
+    }
+
     TEST_F(expecs_SystemManagerTest, getSystem_ReturnsCorrectSystem)
     {
         MovementSystem* retrieved = _systemManager->getSystem<MovementSystem>();
         EXPECT_EQ(retrieved, _movementSystem);
+    }
+
+    TEST_F(expecs_SystemManagerTest, getSystem_TypeErased_ReturnsCorrectSystem)
+    {
+        Signature systemSignature = (Signature{1} << 2);
+        auto system = std::make_unique<RenderSystem>();
+
+        auto* registered = _systemManager->registerSystem(std::type_index(typeid(RenderSystem)), systemSignature, std::move(system));
+
+        auto* retrieved = _systemManager->getSystem(std::type_index(typeid(RenderSystem)));
+        EXPECT_EQ(retrieved, registered);
     }
 
     TEST_F(expecs_SystemManagerTest, entitySignatureChanged_AddsEntityToSystem)
@@ -49,6 +80,20 @@ namespace expecs
         EXPECT_EQ(_movementSystem->getEntities().size(), 1u);
         EXPECT_TRUE(_movementSystem->getEntities().contains(entity));
         EXPECT_TRUE(_movementSystem->entitiesAdded.contains(entity));
+    }
+
+    TEST_F(expecs_SystemManagerTest, registerSystem_TypeErased_AddsEntityToSystem)
+    {
+        Signature systemSignature = (Signature{1} << 2);
+        auto system = std::make_unique<RenderSystem>();
+
+        auto* registered = _systemManager->registerSystem(std::type_index(typeid(RenderSystem)), systemSignature, std::move(system));
+
+        Entity entity = 10;
+        _systemManager->entitySignatureChanged(entity, systemSignature);
+
+        EXPECT_EQ(registered->getEntities().size(), 1u);
+        EXPECT_TRUE(registered->getEntities().contains(entity));
     }
 
     TEST_F(expecs_SystemManagerTest, entitySignatureChanged_RemovesEntityFromSystem)

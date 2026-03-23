@@ -3,7 +3,6 @@
 
 #include <cassert>
 #include <queue>
-#include <ranges>
 #include <unordered_map>
 #include <vector>
 
@@ -19,8 +18,11 @@ namespace expecs
         virtual void removeComponent(Entity entity) = 0;
         virtual bool hasComponent(Entity entity) const = 0;
 
-        virtual void* addComponentRaw(Entity entity, const void* data) = 0;
-        virtual void* getComponentRaw(Entity entity) = 0;
+        virtual void* addComponent(Entity entity, const void* data) = 0;
+        virtual void* getComponent(Entity entity) = 0;
+
+        virtual size_t size() const = 0;
+        virtual std::vector<Entity> getEntities() const = 0;
     };
 
     template <typename T>
@@ -35,21 +37,15 @@ namespace expecs
         }
         ~ComponentPool() = default;
 
-        T& getComponent(Entity entity)
+        T& get(Entity entity)
         {
             auto it = _entityToIndexMap.find(entity);
             return _componentData.at(it->second);
         }
 
-        void* getComponentRaw(Entity entity) override
+        void* getComponent(Entity entity) override
         {
-            return &getComponent(entity);
-        }
-
-        std::vector<Entity> getEntitiesWithComponent() const
-        {
-            auto keyView = std::views::keys(_entityToIndexMap);
-            return std::vector<Entity>{keyView.begin(), keyView.end()};
+            return &get(entity);
         }
 
         bool hasComponent(Entity entity) const override
@@ -57,7 +53,7 @@ namespace expecs
             return _entityToIndexMap.contains(entity);
         }
 
-        T& addComponent(Entity entity, const T& component)
+        T& add(Entity entity, const T& component)
         {
             size_t newIndex = _componentData.size();
             _componentData.push_back(component);
@@ -68,9 +64,9 @@ namespace expecs
             return _componentData[newIndex];
         }
 
-        void* addComponentRaw(Entity entity, const void* data) override
+        void* addComponent(Entity entity, const void* data) override
         {
-            return &addComponent(entity, *static_cast<const T*>(data));
+            return &add(entity, *static_cast<const T*>(data));
         }
 
         void removeComponent(Entity entity) override
@@ -102,6 +98,20 @@ namespace expecs
             {
                 removeComponent(entity);
             }
+        }
+
+        size_t size() const override
+        {
+            return _entityToIndexMap.size();
+        }
+
+        std::vector<Entity> getEntities() const override
+        {
+            std::vector<Entity> entities;
+            entities.reserve(_entityToIndexMap.size());
+            for (const auto& [entity, _] : _entityToIndexMap)
+                entities.push_back(entity);
+            return entities;
         }
 
     private:

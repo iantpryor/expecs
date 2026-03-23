@@ -57,9 +57,9 @@ namespace expecs
             return _componentManager->getComponent<T>(entity);
         }
 
-        void* getComponentRaw(Entity entity, std::type_index typeIndex)
+        void* getComponent(Entity entity, std::type_index typeIndex)
         {
-            return _componentManager->getComponentRaw(entity, typeIndex);
+            return _componentManager->getComponent(entity, typeIndex);
         }
 
         template <typename T>
@@ -68,10 +68,28 @@ namespace expecs
             return _componentManager->getSignature<T>();
         }
 
-        template <typename T>
-        std::vector<Entity> getEntitiesWithComponent() const
+        Signature getComponentSignature(std::type_index typeIndex) const
         {
-            return _componentManager->getEntitiesWithComponent<T>();
+            return _componentManager->getSignature(typeIndex);
+        }
+
+        template <typename... Ts>
+        std::vector<Entity> getEntitiesWithComponents() const
+        {
+            Signature query = (_componentManager->getSignature<Ts>() | ...);
+            return getEntitiesWithComponents(query);
+        }
+
+        std::vector<Entity> getEntitiesWithComponents(Signature signature) const
+        {
+            auto candidates = _componentManager->getSmallestPoolEntities(signature);
+            std::vector<Entity> result;
+            for (Entity entity : candidates)
+            {
+                if ((_entityManager->getSignature(entity) & signature) == signature)
+                    result.push_back(entity);
+            }
+            return result;
         }
 
         template <typename T>
@@ -85,7 +103,7 @@ namespace expecs
             return _componentManager->hasComponent(entity, componentType);
         }
 
-        bool hasComponentRaw(Entity entity, std::type_index typeIndex) const
+        bool hasComponent(Entity entity, std::type_index typeIndex) const
         {
             return _componentManager->hasComponent(entity, typeIndex);
         }
@@ -105,14 +123,14 @@ namespace expecs
             return cmpRef;
         }
 
-        void* addComponentRaw(Entity entity, std::type_index typeIndex, const void* data)
+        void* addComponent(Entity entity, std::type_index typeIndex, const void* data)
         {
             auto signature = _entityManager->getSignature(entity);
             signature |= _componentManager->getSignature(typeIndex);
 
             _entityManager->setSignature(entity, signature);
 
-            void* ptr = _componentManager->addComponentRaw(entity, typeIndex, data);
+            void* ptr = _componentManager->addComponent(entity, typeIndex, data);
 
             _systemManager->entitySignatureChanged(entity, signature);
 
@@ -132,7 +150,7 @@ namespace expecs
             _entityManager->setSignature(entity, signature);
         }
 
-        void removeComponentRaw(Entity entity, std::type_index typeIndex)
+        void removeComponent(Entity entity, std::type_index typeIndex)
         {
             auto signature = _entityManager->getSignature(entity);
             signature &= ~_componentManager->getSignature(typeIndex);
@@ -161,10 +179,22 @@ namespace expecs
             return system;
         }
 
+        System* registerSystem(std::type_index typeIndex, Signature signature, std::unique_ptr<System> system)
+        {
+            auto* ptr = _systemManager->registerSystem(typeIndex, signature, std::move(system));
+            ptr->_registry = this;
+            return ptr;
+        }
+
         template <DerivedFromSystem T>
         T* getSystem() const
         {
             return _systemManager->getSystem<T>();
+        }
+
+        System* getSystem(std::type_index typeIndex) const
+        {
+            return _systemManager->getSystem(typeIndex);
         }
 
     private:
