@@ -2,15 +2,15 @@
 
 #include "mock_objects.h"
 
-#include <gtest/gtest.h>
 #include <chrono>
+#include <gtest/gtest.h>
 
 namespace expecs
 {
     class expecs_RegistryTest : public ::testing::Test
     {
     protected:
-        void SetUp() override 
+        void SetUp() override
         {
             _registry = std::make_unique<Registry>();
 
@@ -145,4 +145,4 @@ namespace expecs
         EXPECT_TRUE(std::find(entitiesWithHealth.begin(), entitiesWithHealth.end(), player) != entitiesWithHealth.end());
         EXPECT_TRUE(std::find(entitiesWithHealth.begin(), entitiesWithHealth.end(), staticObject) != entitiesWithHealth.end());
     }
-}
+} // namespace expecs

@@ -9,14 +9,14 @@ namespace expecs
     class expecs_SystemManagerTest : public ::testing::Test
     {
     protected:
-        void SetUp() override 
+        void SetUp() override
         {
             _systemManager = std::make_unique<SystemManager>();
 
             // Movement system requires Position and Velocity
             Signature movementSignature = 0;
-            movementSignature |= (Signature{1} <<0); // Position component bit
-            movementSignature |= (Signature{1} <<1); // Velocity component bit
+            movementSignature |= (Signature{1} << 0); // Position component bit
+            movementSignature |= (Signature{1} << 1); // Velocity component bit
 
             _movementSystem = _systemManager->registerSystem<MovementSystem>(movementSignature);
         }
@@ -41,8 +41,8 @@ namespace expecs
     {
         Entity entity = 42;
         Signature entitySignature = 0;
-        entitySignature |= (Signature{1} <<0); // Position
-        entitySignature |= (Signature{1} <<1); // Velocity
+        entitySignature |= (Signature{1} << 0); // Position
+        entitySignature |= (Signature{1} << 1); // Velocity
 
         _systemManager->entitySignatureChanged(entity, entitySignature);
 
@@ -54,7 +54,7 @@ namespace expecs
     TEST_F(expecs_SystemManagerTest, entitySignatureChanged_RemovesEntityFromSystem)
     {
         Entity entity = 42;
-        Signature fullSignature = 0b11; // Has both Position and Velocity
+        Signature fullSignature = 0b11;    // Has both Position and Velocity
         Signature partialSignature = 0b01; // Only Position
 
         // Add entity to system
@@ -79,4 +79,4 @@ namespace expecs
         EXPECT_FALSE(_movementSystem->getEntities().contains(entity));
         EXPECT_TRUE(_movementSystem->entitiesRemoved.contains(entity));
     }
-}
+} // namespace expecs

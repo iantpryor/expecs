@@ -6,10 +6,10 @@
 
 namespace expecs
 {
-    class expecs_EntityManagerTest : public ::testing::Test 
+    class expecs_EntityManagerTest : public ::testing::Test
     {
     protected:
-        void SetUp() override 
+        void SetUp() override
         {
             _entityManager = std::make_unique<EntityManager>();
         }
@@ -24,11 +24,11 @@ namespace expecs
         EXPECT_EQ(_entityManager->getEntityCount(), 1u);
     }
 
-    TEST_F(expecs_EntityManagerTest, createMultipleEntities) 
+    TEST_F(expecs_EntityManagerTest, createMultipleEntities)
     {
         std::unordered_set<Entity> entities;
 
-        for (int i = 0; i < 100; ++i) 
+        for (int i = 0; i < 100; ++i)
         {
             Entity entity = _entityManager->createEntity();
             EXPECT_TRUE(entities.insert(entity).second) << "Entity " << entity << " was not unique";
@@ -37,7 +37,7 @@ namespace expecs
         EXPECT_EQ(_entityManager->getEntityCount(), 100u);
     }
 
-    TEST_F(expecs_EntityManagerTest, destroyEntity_Count) 
+    TEST_F(expecs_EntityManagerTest, destroyEntity_Count)
     {
         Entity entity1 = _entityManager->createEntity();
         Entity entity2 = _entityManager->createEntity();
@@ -51,7 +51,7 @@ namespace expecs
         EXPECT_EQ(_entityManager->getEntityCount(), 0u);
     }
 
-    TEST_F(expecs_EntityManagerTest, destroyEntity_Signature) 
+    TEST_F(expecs_EntityManagerTest, destroyEntity_Signature)
     {
         Entity entity = _entityManager->createEntity();
         _entityManager->setSignature(entity, 0xFF);
@@ -74,4 +74,4 @@ namespace expecs
         _entityManager->setSignature(entity, 0b01010101);
         EXPECT_EQ(_entityManager->getSignature(entity), 0b01010101u);
     }
-}
+} // namespace expecs

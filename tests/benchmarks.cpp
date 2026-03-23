@@ -2,8 +2,8 @@
 
 #include "mock_objects.h"
 
-#include <gtest/gtest.h>
 #include <chrono>
+#include <gtest/gtest.h>
 
 namespace expecs
 {
@@ -39,4 +39,4 @@ namespace expecs
         EXPECT_LT(duration.count(), 100000) << "Creating " << NUM_ENTITIES << " entities took " << duration.count() << " microseconds";
         EXPECT_EQ(_registry->getEntityCount(), NUM_ENTITIES);
     }
-}
+} // namespace expecs

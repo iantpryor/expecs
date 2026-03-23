@@ -7,7 +7,7 @@ namespace expecs
     class expecs_ComponentManagerTest : public ::testing::Test
     {
     protected:
-        void SetUp() override 
+        void SetUp() override
         {
             _componentManager = std::make_unique<ComponentManager>();
             _componentManager->registerComponentType<Position>();
@@ -18,12 +18,12 @@ namespace expecs
         std::unique_ptr<ComponentManager> _componentManager;
     };
 
-    TEST_F(expecs_ComponentManagerTest, registerComponentType_ReturnsValidSignature) 
+    TEST_F(expecs_ComponentManagerTest, registerComponentType_ReturnsValidSignature)
     {
-        ComponentManager cm;
+        ComponentManager componentManager;
 
-        Signature posSignature = cm.registerComponentType<Position>();
-        Signature velSignature = cm.registerComponentType<Velocity>();
+        Signature posSignature = componentManager.registerComponentType<Position>();
+        Signature velSignature = componentManager.registerComponentType<Velocity>();
 
         EXPECT_NE(posSignature, 0u);
         EXPECT_NE(velSignature, 0u);
@@ -44,7 +44,7 @@ namespace expecs
         EXPECT_EQ(velSignature & (velSignature - 1), 0u);
     }
 
-    TEST_F(expecs_ComponentManagerTest, addComponent_StoresComponent) 
+    TEST_F(expecs_ComponentManagerTest, addComponent_StoresComponent)
     {
         Entity entity = 42;
         Position pos(1.0f, 2.0f, 3.0f);
@@ -73,7 +73,9 @@ namespace expecs
     TEST_F(expecs_ComponentManagerTest, hasComponent_ReturnsFalse_WhenTypeNotRegistered)
     {
         Entity entity = 42;
-        struct UnregisteredComponent {};
+        struct UnregisteredComponent
+        {
+        };
 
         EXPECT_FALSE(_componentManager->hasComponent<UnregisteredComponent>(entity));
     }
@@ -140,4 +142,4 @@ namespace expecs
         EXPECT_FALSE(_componentManager->hasComponent<Velocity>(entity));
         EXPECT_FALSE(_componentManager->hasComponent<Health>(entity));
     }
-}
+} // namespace expecs
