@@ -55,6 +55,16 @@ namespace expecs
             return componentSignature;
         }
 
+        Signature getSignature(std::type_index typeIndex) const
+        {
+            Signature componentSignature = 0;
+            if (_typeMap.contains(typeIndex))
+            {
+                componentSignature |= (Signature{1} << _typeMap.at(typeIndex));
+            }
+            return componentSignature;
+        }
+
         template <typename T>
         ComponentType getComponentType() const
         {
@@ -78,6 +88,12 @@ namespace expecs
             auto componentPool = dynamic_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
             return componentPool->getComponent(entity);
+        }
+
+        void* getComponentRaw(Entity entity, std::type_index typeIndex)
+        {
+            ComponentType componentTypeBit = _typeMap.at(typeIndex);
+            return _componentPools[componentTypeBit]->getComponentRaw(entity);
         }
 
         template <typename T>
@@ -105,6 +121,14 @@ namespace expecs
             return _componentPools.at(componentType)->hasComponent(entity);
         }
 
+        bool hasComponent(Entity entity, std::type_index typeIndex) const
+        {
+            if (!_typeMap.contains(typeIndex))
+                return false;
+            ComponentType componentTypeBit = _typeMap.at(typeIndex);
+            return _componentPools[componentTypeBit]->hasComponent(entity);
+        }
+
         template <typename T>
         T& addComponent(Entity entity, const T& component)
         {
@@ -112,6 +136,12 @@ namespace expecs
             auto componentPool = dynamic_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
             return componentPool->addComponent(entity, component);
+        }
+
+        void* addComponentRaw(Entity entity, std::type_index typeIndex, const void* data)
+        {
+            ComponentType componentTypeBit = _typeMap.at(typeIndex);
+            return _componentPools[componentTypeBit]->addComponentRaw(entity, data);
         }
 
         template <typename T>

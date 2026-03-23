@@ -57,6 +57,11 @@ namespace expecs
             return _componentManager->getComponent<T>(entity);
         }
 
+        void* getComponentRaw(Entity entity, std::type_index typeIndex)
+        {
+            return _componentManager->getComponentRaw(entity, typeIndex);
+        }
+
         template <typename T>
         Signature getComponentSignature() const
         {
@@ -80,6 +85,11 @@ namespace expecs
             return _componentManager->hasComponent(entity, componentType);
         }
 
+        bool hasComponentRaw(Entity entity, std::type_index typeIndex) const
+        {
+            return _componentManager->hasComponent(entity, typeIndex);
+        }
+
         template <typename T>
         T& addComponent(Entity entity, const T& component)
         {
@@ -95,6 +105,20 @@ namespace expecs
             return cmpRef;
         }
 
+        void* addComponentRaw(Entity entity, std::type_index typeIndex, const void* data)
+        {
+            auto signature = _entityManager->getSignature(entity);
+            signature |= _componentManager->getSignature(typeIndex);
+
+            _entityManager->setSignature(entity, signature);
+
+            void* ptr = _componentManager->addComponentRaw(entity, typeIndex, data);
+
+            _systemManager->entitySignatureChanged(entity, signature);
+
+            return ptr;
+        }
+
         template <typename T>
         void removeComponent(Entity entity)
         {
@@ -104,6 +128,18 @@ namespace expecs
             _systemManager->entitySignatureChanged(entity, signature);
 
             _componentManager->removeComponent<T>(entity);
+
+            _entityManager->setSignature(entity, signature);
+        }
+
+        void removeComponentRaw(Entity entity, std::type_index typeIndex)
+        {
+            auto signature = _entityManager->getSignature(entity);
+            signature &= ~_componentManager->getSignature(typeIndex);
+
+            _systemManager->entitySignatureChanged(entity, signature);
+
+            _componentManager->removeComponent(entity, typeIndex);
 
             _entityManager->setSignature(entity, signature);
         }

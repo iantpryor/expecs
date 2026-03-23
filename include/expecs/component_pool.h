@@ -18,6 +18,9 @@ namespace expecs
         virtual void entityDestroyed(Entity entity) = 0;
         virtual void removeComponent(Entity entity) = 0;
         virtual bool hasComponent(Entity entity) const = 0;
+
+        virtual void* addComponentRaw(Entity entity, const void* data) = 0;
+        virtual void* getComponentRaw(Entity entity) = 0;
     };
 
     template <typename T>
@@ -36,6 +39,11 @@ namespace expecs
         {
             auto it = _entityToIndexMap.find(entity);
             return _componentData.at(it->second);
+        }
+
+        void* getComponentRaw(Entity entity) override
+        {
+            return &getComponent(entity);
         }
 
         std::vector<Entity> getEntitiesWithComponent() const
@@ -58,6 +66,11 @@ namespace expecs
             _indexToEntityMap[newIndex] = entity;
 
             return _componentData[newIndex];
+        }
+
+        void* addComponentRaw(Entity entity, const void* data) override
+        {
+            return &addComponent(entity, *static_cast<const T*>(data));
         }
 
         void removeComponent(Entity entity) override

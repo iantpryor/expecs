@@ -71,6 +71,14 @@ namespace expecs
         EXPECT_EQ(velSignature & (velSignature - 1), 0u);
     }
 
+    TEST_F(expecs_ComponentManagerTest, getSignature_TypeIndex_ReturnsCorrectSignature)
+    {
+        Signature templatedSignature = _componentManager->getSignature<Position>();
+        Signature typeIndexSignature = _componentManager->getSignature(std::type_index(typeid(Position)));
+
+        EXPECT_EQ(templatedSignature, typeIndexSignature);
+    }
+
     TEST_F(expecs_ComponentManagerTest, addComponent_StoresComponent)
     {
         Entity entity = 42;
@@ -79,6 +87,19 @@ namespace expecs
         auto& addedPos = _componentManager->addComponent(entity, pos);
 
         EXPECT_EQ(addedPos, pos);
+        EXPECT_TRUE(_componentManager->hasComponent<Position>(entity));
+    }
+
+    TEST_F(expecs_ComponentManagerTest, addComponentRaw_StoresComponent)
+    {
+        Entity entity = 42;
+        Position position(1.0f, 2.0f, 3.0f);
+
+        void* ptr = _componentManager->addComponentRaw(entity, std::type_index(typeid(Position)), &position);
+
+        ASSERT_NE(ptr, nullptr);
+        auto* storedPosition = static_cast<Position*>(ptr);
+        EXPECT_EQ(*storedPosition, position);
         EXPECT_TRUE(_componentManager->hasComponent<Position>(entity));
     }
 
@@ -94,6 +115,23 @@ namespace expecs
 
         // Modify and ensure it persists
         retrievedPos.x = 99.0f;
+        EXPECT_EQ(_componentManager->getComponent<Position>(entity).x, 99.0f);
+    }
+
+    TEST_F(expecs_ComponentManagerTest, getComponentRaw_ReturnsCorrectComponent)
+    {
+        Entity entity = 42;
+        Position position(10.0f, 20.0f, 30.0f);
+
+        _componentManager->addComponent(entity, position);
+
+        void* ptr = _componentManager->getComponentRaw(entity, std::type_index(typeid(Position)));
+
+        ASSERT_NE(ptr, nullptr);
+        auto* retrievedPosition = static_cast<Position*>(ptr);
+        EXPECT_EQ(*retrievedPosition, position);
+
+        retrievedPosition->x = 99.0f;
         EXPECT_EQ(_componentManager->getComponent<Position>(entity).x, 99.0f);
     }
 
@@ -120,6 +158,17 @@ namespace expecs
         _componentManager->addComponent(entity, Velocity());
         EXPECT_TRUE(_componentManager->hasComponent<Position>(entity));
         EXPECT_TRUE(_componentManager->hasComponent<Velocity>(entity));
+    }
+
+    TEST_F(expecs_ComponentManagerTest, hasComponent_TypeIndex_ReturnsCorrectStatus)
+    {
+        Entity entity = 42;
+
+        EXPECT_FALSE(_componentManager->hasComponent(entity, std::type_index(typeid(Position))));
+
+        _componentManager->addComponent(entity, Position());
+        EXPECT_TRUE(_componentManager->hasComponent(entity, std::type_index(typeid(Position))));
+        EXPECT_FALSE(_componentManager->hasComponent(entity, std::type_index(typeid(Velocity))));
     }
 
     TEST_F(expecs_ComponentManagerTest, removeComponent_RemovesComponent)

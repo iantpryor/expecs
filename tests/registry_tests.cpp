@@ -75,6 +75,20 @@ namespace expecs
         EXPECT_TRUE(_movementSystem->getEntities().contains(entity));
     }
 
+    TEST_F(expecs_RegistryTest, addComponentRaw_UpdatesSystemMembership)
+    {
+        Entity entity = _registry->createEntity();
+
+        Position position(1.0f, 2.0f, 3.0f);
+        Velocity velocity(4.0f, 5.0f, 6.0f);
+
+        _registry->addComponentRaw(entity, std::type_index(typeid(Position)), &position);
+        EXPECT_FALSE(_movementSystem->getEntities().contains(entity));
+
+        _registry->addComponentRaw(entity, std::type_index(typeid(Velocity)), &velocity);
+        EXPECT_TRUE(_movementSystem->getEntities().contains(entity));
+    }
+
     TEST_F(expecs_RegistryTest, removeComponent_UpdatesSystemMembership)
     {
         Entity entity = _registry->createEntity();
@@ -86,6 +100,20 @@ namespace expecs
 
         // Remove one component
         _registry->removeComponent<Velocity>(entity);
+        EXPECT_FALSE(_movementSystem->getEntities().contains(entity));
+        EXPECT_TRUE(_registry->hasComponent<Position>(entity));
+        EXPECT_FALSE(_registry->hasComponent<Velocity>(entity));
+    }
+
+    TEST_F(expecs_RegistryTest, removeComponentRaw_UpdatesSystemMembership)
+    {
+        Entity entity = _registry->createEntity();
+
+        _registry->addComponent(entity, Position());
+        _registry->addComponent(entity, Velocity());
+        EXPECT_TRUE(_movementSystem->getEntities().contains(entity));
+
+        _registry->removeComponentRaw(entity, std::type_index(typeid(Velocity)));
         EXPECT_FALSE(_movementSystem->getEntities().contains(entity));
         EXPECT_TRUE(_registry->hasComponent<Position>(entity));
         EXPECT_FALSE(_registry->hasComponent<Velocity>(entity));
@@ -104,6 +132,52 @@ namespace expecs
         // Modify through reference
         pos.x = 99;
         EXPECT_EQ(_registry->getComponent<Position>(entity).x, 99.0f);
+    }
+
+    TEST_F(expecs_RegistryTest, getComponentRaw_ReturnsCorrectPointer)
+    {
+        Entity entity = _registry->createEntity();
+        Position position(10.0f, 20.0f, 30.0f);
+
+        _registry->addComponent(entity, position);
+
+        void* ptr = _registry->getComponentRaw(entity, std::type_index(typeid(Position)));
+        ASSERT_NE(ptr, nullptr);
+
+        auto* retrievedPosition = static_cast<Position*>(ptr);
+        EXPECT_EQ(*retrievedPosition, position);
+    }
+
+    TEST_F(expecs_RegistryTest, hasComponentRaw_ReturnsCorrectStatus)
+    {
+        Entity entity = _registry->createEntity();
+
+        EXPECT_FALSE(_registry->hasComponentRaw(entity, std::type_index(typeid(Position))));
+
+        _registry->addComponent(entity, Position());
+        EXPECT_TRUE(_registry->hasComponentRaw(entity, std::type_index(typeid(Position))));
+        EXPECT_FALSE(_registry->hasComponentRaw(entity, std::type_index(typeid(Velocity))));
+    }
+
+    TEST_F(expecs_RegistryTest, registerComponentPool_WorksWithRawApi)
+    {
+        Registry registry;
+
+        auto positionPool = std::make_unique<ComponentPool<Position>>();
+        Signature positionSignature = registry.registerComponentPool(std::type_index(typeid(Position)), std::move(positionPool));
+
+        EXPECT_NE(positionSignature, 0u);
+
+        Entity entity = registry.createEntity();
+        Position position(1.0f, 2.0f, 3.0f);
+
+        registry.addComponentRaw(entity, std::type_index(typeid(Position)), &position);
+
+        EXPECT_TRUE(registry.hasComponentRaw(entity, std::type_index(typeid(Position))));
+        EXPECT_EQ(registry.getEntitySignature(entity), positionSignature);
+
+        auto* retrievedPosition = static_cast<Position*>(registry.getComponentRaw(entity, std::type_index(typeid(Position))));
+        EXPECT_EQ(*retrievedPosition, position);
     }
 
     TEST_F(expecs_RegistryTest, complexScenario_MultipleEntitiesAndSystems)
