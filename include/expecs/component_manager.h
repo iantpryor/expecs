@@ -1,6 +1,8 @@
 #pragma once
 #include "component_pool.h"
 
+#include <cassert>
+#include <limits>
 #include <memory>
 #include <typeindex>
 #include <unordered_map>
@@ -8,7 +10,14 @@
 namespace expecs
 {
     using ComponentType = uint8_t;
+    constexpr ComponentType INVALID_COMPONENT_TYPE = std::numeric_limits<ComponentType>::max();
     constexpr uint8_t MAX_COMPONENTS = 64;
+
+    template <typename T>
+    struct ComponentTypeID
+    {
+        static inline ComponentType id = INVALID_COMPONENT_TYPE;
+    };
 
     class ComponentManager
     {
@@ -18,6 +27,7 @@ namespace expecs
 
         Signature registerComponentPool(std::type_index typeIndex, std::unique_ptr<ComponentPoolBase> pool)
         {
+            assert(_currentComponentType < MAX_COMPONENTS && "Exceeded maximum component types");
             _componentPools.push_back(std::move(pool));
 
             _typeMap[typeIndex] = _currentComponentType;
@@ -32,8 +42,10 @@ namespace expecs
         template <typename T>
         Signature registerComponentType()
         {
+            assert(_currentComponentType < MAX_COMPONENTS && "Exceeded maximum component types");
             _componentPools.push_back(std::make_unique<ComponentPool<T>>());
 
+            ComponentTypeID<T>::id = _currentComponentType;
             _typeMap[std::type_index(typeid(T))] = _currentComponentType;
             Signature componentSignature = 0;
             componentSignature |= (Signature{1} << _currentComponentType);
@@ -46,11 +58,12 @@ namespace expecs
         template <typename T>
         Signature getSignature() const
         {
+            ComponentType componentType = ComponentTypeID<T>::id;
+            if (componentType == INVALID_COMPONENT_TYPE)
+                return 0;
+
             Signature componentSignature = 0;
-            if (_typeMap.contains(std::type_index(typeid(T))))
-            {
-                componentSignature |= (Signature{1} << _typeMap.at(std::type_index(typeid(T))));
-            }
+            componentSignature |= (Signature{1} << componentType);
 
             return componentSignature;
         }
@@ -58,9 +71,10 @@ namespace expecs
         Signature getSignature(std::type_index typeIndex) const
         {
             Signature componentSignature = 0;
-            if (_typeMap.contains(typeIndex))
+            auto it = _typeMap.find(typeIndex);
+            if (it != _typeMap.end())
             {
-                componentSignature |= (Signature{1} << _typeMap.at(typeIndex));
+                componentSignature |= (Signature{1} << it->second);
             }
             return componentSignature;
         }
@@ -68,7 +82,7 @@ namespace expecs
         template <typename T>
         ComponentType getComponentType() const
         {
-            return _typeMap.at(std::type_index(typeid(T)));
+            return ComponentTypeID<T>::id;
         }
 
         std::vector<ComponentType> getRegisteredComponentTypes() const
@@ -84,7 +98,7 @@ namespace expecs
         template <typename T>
         T& getComponent(Entity entity)
         {
-            ComponentType componentTypeBit = _typeMap.at(std::type_index(typeid(T)));
+            ComponentType componentTypeBit = ComponentTypeID<T>::id;
             auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
             return componentPool->get(entity);
@@ -99,9 +113,9 @@ namespace expecs
         template <typename T>
         bool hasComponent(Entity entity) const
         {
-            if (!_typeMap.contains(std::type_index(typeid(T))))
+            ComponentType componentTypeBit = ComponentTypeID<T>::id;
+            if (componentTypeBit == INVALID_COMPONENT_TYPE)
                 return false;
-            ComponentType componentTypeBit = _typeMap.at(std::type_index(typeid(T)));
             auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
             return componentPool->hasComponent(entity);
@@ -114,16 +128,16 @@ namespace expecs
 
         bool hasComponent(Entity entity, std::type_index typeIndex) const
         {
-            if (!_typeMap.contains(typeIndex))
+            auto it = _typeMap.find(typeIndex);
+            if (it == _typeMap.end())
                 return false;
-            ComponentType componentTypeBit = _typeMap.at(typeIndex);
-            return _componentPools[componentTypeBit]->hasComponent(entity);
+            return _componentPools[it->second]->hasComponent(entity);
         }
 
         template <typename T>
         T& addComponent(Entity entity, const T& component)
         {
-            ComponentType componentTypeBit = _typeMap.at(std::type_index(typeid(T)));
+            ComponentType componentTypeBit = ComponentTypeID<T>::id;
             auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
             return componentPool->add(entity, component);
@@ -138,7 +152,7 @@ namespace expecs
         template <typename T>
         void removeComponent(Entity entity)
         {
-            ComponentType componentTypeBit = _typeMap.at(std::type_index(typeid(T)));
+            ComponentType componentTypeBit = ComponentTypeID<T>::id;
 
             auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
             componentPool->removeComponent(entity);

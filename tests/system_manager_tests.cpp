@@ -6,15 +6,6 @@
 
 namespace expecs
 {
-    class RenderSystem : public System
-    {
-    public:
-        void entityAdded(Entity entity) override { entitiesAdded.insert(entity); }
-        void entityRemoved(Entity entity) override { entitiesRemoved.insert(entity); }
-        std::unordered_set<Entity> entitiesAdded;
-        std::unordered_set<Entity> entitiesRemoved;
-    };
-
     class expecs_SystemManagerTest : public ::testing::Test
     {
     protected:
@@ -78,7 +69,7 @@ namespace expecs
         _systemManager->entitySignatureChanged(entity, entitySignature);
 
         EXPECT_EQ(_movementSystem->getEntities().size(), 1u);
-        EXPECT_TRUE(_movementSystem->getEntities().contains(entity));
+        EXPECT_TRUE(_movementSystem->contains(entity));
         EXPECT_TRUE(_movementSystem->entitiesAdded.contains(entity));
     }
 
@@ -93,7 +84,8 @@ namespace expecs
         _systemManager->entitySignatureChanged(entity, systemSignature);
 
         EXPECT_EQ(registered->getEntities().size(), 1u);
-        EXPECT_TRUE(registered->getEntities().contains(entity));
+        EXPECT_TRUE(registered->contains(entity));
+        EXPECT_TRUE(static_cast<RenderSystem*>(registered)->entitiesAdded.contains(entity));
     }
 
     TEST_F(expecs_SystemManagerTest, entitySignatureChanged_RemovesEntityFromSystem)
@@ -104,11 +96,11 @@ namespace expecs
 
         // Add entity to system
         _systemManager->entitySignatureChanged(entity, fullSignature);
-        EXPECT_TRUE(_movementSystem->getEntities().contains(entity));
+        EXPECT_TRUE(_movementSystem->contains(entity));
 
         // Remove velocity component (partial signature)
         _systemManager->entitySignatureChanged(entity, partialSignature);
-        EXPECT_FALSE(_movementSystem->getEntities().contains(entity));
+        EXPECT_FALSE(_movementSystem->contains(entity));
         EXPECT_TRUE(_movementSystem->entitiesRemoved.contains(entity));
     }
 
@@ -118,10 +110,10 @@ namespace expecs
         Signature entitySignature = 0b11; // Has both components
 
         _systemManager->entitySignatureChanged(entity, entitySignature);
-        EXPECT_TRUE(_movementSystem->getEntities().contains(entity));
+        EXPECT_TRUE(_movementSystem->contains(entity));
 
         _systemManager->entityDestroyed(entity);
-        EXPECT_FALSE(_movementSystem->getEntities().contains(entity));
+        EXPECT_FALSE(_movementSystem->contains(entity));
         EXPECT_TRUE(_movementSystem->entitiesRemoved.contains(entity));
     }
 } // namespace expecs

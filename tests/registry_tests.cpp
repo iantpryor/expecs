@@ -47,7 +47,7 @@ namespace expecs
         _registry->addComponent(entity, Velocity(4, 5, 6));
 
         // Verify entity is in system
-        EXPECT_TRUE(_movementSystem->getEntities().contains(entity));
+        EXPECT_TRUE(_movementSystem->contains(entity));
 
         // Destroy entity
         _registry->destroyEntity(entity);
@@ -56,7 +56,7 @@ namespace expecs
         EXPECT_EQ(_registry->getEntityCount(), 0u);
         EXPECT_FALSE(_registry->hasComponent<Position>(entity));
         EXPECT_FALSE(_registry->hasComponent<Velocity>(entity));
-        EXPECT_FALSE(_movementSystem->getEntities().contains(entity));
+        EXPECT_FALSE(_movementSystem->contains(entity));
     }
 
     TEST_F(expecs_RegistryTest, addComponent_UpdatesSystemMembership)
@@ -64,15 +64,15 @@ namespace expecs
         Entity entity = _registry->createEntity();
 
         // Initially not in movement system
-        EXPECT_FALSE(_movementSystem->getEntities().contains(entity));
+        EXPECT_FALSE(_movementSystem->contains(entity));
 
         // Add Position only - still not in system
         _registry->addComponent(entity, Position());
-        EXPECT_FALSE(_movementSystem->getEntities().contains(entity));
+        EXPECT_FALSE(_movementSystem->contains(entity));
 
         // Add Velocity - now in system
         _registry->addComponent(entity, Velocity());
-        EXPECT_TRUE(_movementSystem->getEntities().contains(entity));
+        EXPECT_TRUE(_movementSystem->contains(entity));
     }
 
     TEST_F(expecs_RegistryTest, addComponent_TypeErased_UpdatesSystemMembership)
@@ -83,10 +83,10 @@ namespace expecs
         Velocity velocity(4.0f, 5.0f, 6.0f);
 
         _registry->addComponent(entity, std::type_index(typeid(Position)), &position);
-        EXPECT_FALSE(_movementSystem->getEntities().contains(entity));
+        EXPECT_FALSE(_movementSystem->contains(entity));
 
         _registry->addComponent(entity, std::type_index(typeid(Velocity)), &velocity);
-        EXPECT_TRUE(_movementSystem->getEntities().contains(entity));
+        EXPECT_TRUE(_movementSystem->contains(entity));
     }
 
     TEST_F(expecs_RegistryTest, removeComponent_UpdatesSystemMembership)
@@ -96,11 +96,11 @@ namespace expecs
         // Add both components
         _registry->addComponent(entity, Position());
         _registry->addComponent(entity, Velocity());
-        EXPECT_TRUE(_movementSystem->getEntities().contains(entity));
+        EXPECT_TRUE(_movementSystem->contains(entity));
 
         // Remove one component
         _registry->removeComponent<Velocity>(entity);
-        EXPECT_FALSE(_movementSystem->getEntities().contains(entity));
+        EXPECT_FALSE(_movementSystem->contains(entity));
         EXPECT_TRUE(_registry->hasComponent<Position>(entity));
         EXPECT_FALSE(_registry->hasComponent<Velocity>(entity));
     }
@@ -111,10 +111,10 @@ namespace expecs
 
         _registry->addComponent(entity, Position());
         _registry->addComponent(entity, Velocity());
-        EXPECT_TRUE(_movementSystem->getEntities().contains(entity));
+        EXPECT_TRUE(_movementSystem->contains(entity));
 
         _registry->removeComponent(entity, std::type_index(typeid(Velocity)));
-        EXPECT_FALSE(_movementSystem->getEntities().contains(entity));
+        EXPECT_FALSE(_movementSystem->contains(entity));
         EXPECT_TRUE(_registry->hasComponent<Position>(entity));
         EXPECT_FALSE(_registry->hasComponent<Velocity>(entity));
     }
@@ -201,9 +201,9 @@ namespace expecs
         _registry->addComponent(staticObject, Health(50, 50));
 
         // Check system membership
-        EXPECT_TRUE(_movementSystem->getEntities().contains(player));
-        EXPECT_TRUE(_movementSystem->getEntities().contains(npc));
-        EXPECT_FALSE(_movementSystem->getEntities().contains(staticObject));
+        EXPECT_TRUE(_movementSystem->contains(player));
+        EXPECT_TRUE(_movementSystem->contains(npc));
+        EXPECT_FALSE(_movementSystem->contains(staticObject));
 
         // Run movement system
         _movementSystem->update();

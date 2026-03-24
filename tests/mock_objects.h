@@ -1,5 +1,6 @@
 #pragma once
 #include "expecs/registry.h"
+#include <unordered_set>
 
 namespace expecs
 {
@@ -66,6 +67,22 @@ namespace expecs
             entitiesAdded.insert(entity);
         }
 
+        void entityRemoved(Entity entity) override
+        {
+            entitiesRemoved.insert(entity);
+        }
+
+        std::unordered_set<Entity> entitiesAdded;
+        std::unordered_set<Entity> entitiesRemoved;
+    };
+
+    class RenderSystem : public System
+    {
+    public:
+        void entityAdded(Entity entity) override
+        {
+            entitiesAdded.insert(entity);
+        }
         void entityRemoved(Entity entity) override
         {
             entitiesRemoved.insert(entity);

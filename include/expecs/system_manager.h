@@ -1,12 +1,14 @@
 #pragma once
 #include "entity_manager.h"
 
+#include <algorithm>
+#include <limits>
 #include <memory>
 #include <string>
 #include <type_traits>
 #include <typeindex>
 #include <unordered_map>
-#include <unordered_set>
+#include <vector>
 
 namespace expecs
 {
@@ -14,20 +16,50 @@ namespace expecs
     class System
     {
     public:
-        System() = default;
+        System()
+        {
+            _entityToIndexMap.resize(MAX_ENTITIES, INVALID_INDEX);
+        }
         virtual ~System() = default;
 
         virtual void entityAdded(Entity /*entity*/) {}
         virtual void entityRemoved(Entity /*entity*/) {}
 
-        const std::unordered_set<Entity>& getEntities() const { return _entities; }
+        const std::vector<Entity>& getEntities() const { return _entities; }
+        bool contains(Entity entity) const { return entity < MAX_ENTITIES && _entityToIndexMap[entity] != INVALID_INDEX; }
         Registry* getRegistry() const { return _registry; }
 
     private:
+        static constexpr size_t INVALID_INDEX = std::numeric_limits<size_t>::max();
         friend class SystemManager;
         friend class Registry;
-        std::unordered_set<Entity> _entities;
+        std::vector<Entity> _entities;
+        std::vector<size_t> _entityToIndexMap;
         Registry* _registry = nullptr;
+
+        void addEntity(Entity entity)
+        {
+            _entityToIndexMap[entity] = _entities.size();
+            _entities.push_back(entity);
+        }
+
+        void removeEntity(Entity entity)
+        {
+            size_t indexToRemove = _entityToIndexMap[entity];
+            size_t lastIndex = _entities.size() - 1;
+
+            if (indexToRemove != lastIndex)
+            {
+                // Move last element to the position of removed element
+                Entity lastEntity = _entities[lastIndex];
+                _entities[indexToRemove] = lastEntity;
+                _entityToIndexMap[lastEntity] = indexToRemove;
+            }
+
+            // Remove the last element
+            _entities.pop_back();
+            _entityToIndexMap[entity] = INVALID_INDEX;
+        }
     };
 
     template <typename T>
@@ -73,10 +105,10 @@ namespace expecs
         {
             for (auto const& [typeName, system] : _systemsMap)
             {
-                if (system->_entities.contains(entity))
+                if (system->contains(entity))
                 {
                     system->entityRemoved(entity);
-                    system->_entities.erase(entity);
+                    system->removeEntity(entity);
                 }
             }
         }
@@ -89,18 +121,18 @@ namespace expecs
 
                 if ((entitySignature & systemSignature) == systemSignature)
                 {
-                    if (!system->_entities.contains(entity))
+                    if (!system->contains(entity))
                     {
-                        system->_entities.insert(entity);
+                        system->addEntity(entity);
                         system->entityAdded(entity);
                     }
                 }
                 else
                 {
-                    if (system->_entities.contains(entity))
+                    if (system->contains(entity))
                     {
                         system->entityRemoved(entity);
-                        system->_entities.erase(entity);
+                        system->removeEntity(entity);
                     }
                 }
             }

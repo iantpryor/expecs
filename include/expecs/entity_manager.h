@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cassert>
 #include <cstdint>
 #include <stack>
 
@@ -26,6 +27,7 @@ namespace expecs
 
         Entity createEntity()
         {
+            assert(!_availableEntities.empty() && "Exceeded maximum entities");
             Entity id = _availableEntities.top();
             _availableEntities.pop();
             _aliveCount++;

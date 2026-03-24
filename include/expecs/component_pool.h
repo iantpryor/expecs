@@ -2,8 +2,7 @@
 #include "entity_manager.h"
 
 #include <cassert>
-#include <queue>
-#include <unordered_map>
+#include <limits>
 #include <vector>
 
 namespace expecs
@@ -32,15 +31,14 @@ namespace expecs
         ComponentPool()
         {
             _componentData.reserve(MAX_ENTITIES);
-            _entityToIndexMap.reserve(MAX_ENTITIES);
-            _indexToEntityMap.reserve(MAX_ENTITIES);
+            _entityToIndexMap.resize(MAX_ENTITIES, INVALID_INDEX);
+            _entities.reserve(MAX_ENTITIES);
         }
         ~ComponentPool() = default;
 
         T& get(Entity entity)
         {
-            auto it = _entityToIndexMap.find(entity);
-            return _componentData.at(it->second);
+            return _componentData[_entityToIndexMap[entity]];
         }
 
         void* getComponent(Entity entity) override
@@ -50,7 +48,7 @@ namespace expecs
 
         bool hasComponent(Entity entity) const override
         {
-            return _entityToIndexMap.contains(entity);
+            return entity < MAX_ENTITIES && _entityToIndexMap[entity] != INVALID_INDEX;
         }
 
         T& add(Entity entity, const T& component)
@@ -59,7 +57,7 @@ namespace expecs
             _componentData.push_back(component);
 
             _entityToIndexMap[entity] = newIndex;
-            _indexToEntityMap[newIndex] = entity;
+            _entities.push_back(entity);
 
             return _componentData[newIndex];
         }
@@ -71,30 +69,28 @@ namespace expecs
 
         void removeComponent(Entity entity) override
         {
-            auto it = _entityToIndexMap.find(entity);
-
-            size_t indexToRemove = it->second;
+            size_t indexToRemove = _entityToIndexMap[entity];
             size_t lastIndex = _componentData.size() - 1;
 
             if (indexToRemove != lastIndex)
             {
                 // Move last element to the position of removed element
-                Entity lastEntity = _indexToEntityMap[lastIndex];
+                Entity lastEntity = _entities[lastIndex];
 
                 _componentData[indexToRemove] = std::move(_componentData[lastIndex]);
-                _indexToEntityMap[indexToRemove] = lastEntity;
+                _entities[indexToRemove] = lastEntity;
                 _entityToIndexMap[lastEntity] = indexToRemove;
             }
 
             // Remove the last element
             _componentData.pop_back();
-            _entityToIndexMap.erase(entity);
-            _indexToEntityMap.erase(lastIndex);
+            _entityToIndexMap[entity] = INVALID_INDEX;
+            _entities.pop_back();
         }
 
         void entityDestroyed(Entity entity) override
         {
-            if (_entityToIndexMap.find(entity) != _entityToIndexMap.end())
+            if (hasComponent(entity))
             {
                 removeComponent(entity);
             }
@@ -102,21 +98,18 @@ namespace expecs
 
         size_t size() const override
         {
-            return _entityToIndexMap.size();
+            return _entities.size();
         }
 
         std::vector<Entity> getEntities() const override
         {
-            std::vector<Entity> entities;
-            entities.reserve(_entityToIndexMap.size());
-            for (const auto& [entity, _] : _entityToIndexMap)
-                entities.push_back(entity);
-            return entities;
+            return _entities;
         }
 
     private:
+        static constexpr size_t INVALID_INDEX = std::numeric_limits<size_t>::max();
         std::vector<T> _componentData = {};
-        std::unordered_map<Entity, size_t> _entityToIndexMap = {};
-        std::unordered_map<size_t, Entity> _indexToEntityMap = {};
+        std::vector<size_t> _entityToIndexMap = {};
+        std::vector<Entity> _entities = {};
     };
 } // namespace expecs
