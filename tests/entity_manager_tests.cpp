@@ -20,7 +20,6 @@ namespace expecs
     TEST_F(expecs_EntityManagerTest, createEntity)
     {
         Entity entity = _entityManager->createEntity();
-        EXPECT_LT(entity, MAX_ENTITIES);
         EXPECT_EQ(_entityManager->getEntityCount(), 1u);
     }
 

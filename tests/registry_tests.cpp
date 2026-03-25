@@ -34,7 +34,6 @@ namespace expecs
     TEST_F(expecs_RegistryTest, createEntity_ReturnsValidEntity)
     {
         Entity entity = _registry->createEntity();
-        EXPECT_LT(entity, MAX_ENTITIES);
         EXPECT_EQ(_registry->getEntityCount(), 1u);
     }
 

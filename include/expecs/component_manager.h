@@ -99,6 +99,7 @@ namespace expecs
         T& getComponent(Entity entity)
         {
             ComponentType componentTypeBit = ComponentTypeID<T>::id;
+            assert(componentTypeBit != INVALID_COMPONENT_TYPE && componentTypeBit < _componentPools.size() && "Component type not registered");
             auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
             return componentPool->get(entity);
@@ -114,7 +115,7 @@ namespace expecs
         bool hasComponent(Entity entity) const
         {
             ComponentType componentTypeBit = ComponentTypeID<T>::id;
-            if (componentTypeBit == INVALID_COMPONENT_TYPE)
+            if (componentTypeBit == INVALID_COMPONENT_TYPE || componentTypeBit >= _componentPools.size())
                 return false;
             auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
@@ -138,6 +139,7 @@ namespace expecs
         T& addComponent(Entity entity, const T& component)
         {
             ComponentType componentTypeBit = ComponentTypeID<T>::id;
+            assert(componentTypeBit != INVALID_COMPONENT_TYPE && componentTypeBit < _componentPools.size() && "Component type not registered");
             auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
             return componentPool->add(entity, component);
@@ -153,6 +155,7 @@ namespace expecs
         void removeComponent(Entity entity)
         {
             ComponentType componentTypeBit = ComponentTypeID<T>::id;
+            assert(componentTypeBit != INVALID_COMPONENT_TYPE && componentTypeBit < _componentPools.size() && "Component type not registered");
 
             auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
             componentPool->removeComponent(entity);

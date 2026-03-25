@@ -1,6 +1,7 @@
 #pragma once
 #include "entity_manager.h"
 
+#include <algorithm>
 #include <cassert>
 #include <limits>
 #include <vector>
@@ -28,12 +29,7 @@ namespace expecs
     class ComponentPool : public ComponentPoolBase
     {
     public:
-        ComponentPool()
-        {
-            _componentData.reserve(MAX_ENTITIES);
-            _entityToIndexMap.resize(MAX_ENTITIES, INVALID_INDEX);
-            _entities.reserve(MAX_ENTITIES);
-        }
+        ComponentPool() = default;
         ~ComponentPool() = default;
 
         T& get(Entity entity)
@@ -48,13 +44,19 @@ namespace expecs
 
         bool hasComponent(Entity entity) const override
         {
-            return entity < MAX_ENTITIES && _entityToIndexMap[entity] != INVALID_INDEX;
+            return entity < _entityToIndexMap.size() && _entityToIndexMap[entity] != INVALID_INDEX;
         }
 
         T& add(Entity entity, const T& component)
         {
             size_t newIndex = _componentData.size();
             _componentData.push_back(component);
+
+            if (entity >= _entityToIndexMap.size())
+            {
+                size_t newSize = std::max(_entityToIndexMap.size() * 2, static_cast<size_t>(entity) + 1);
+                _entityToIndexMap.resize(newSize, INVALID_INDEX);
+            }
 
             _entityToIndexMap[entity] = newIndex;
             _entities.push_back(entity);

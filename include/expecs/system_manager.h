@@ -16,17 +16,14 @@ namespace expecs
     class System
     {
     public:
-        System()
-        {
-            _entityToIndexMap.resize(MAX_ENTITIES, INVALID_INDEX);
-        }
+        System() = default;
         virtual ~System() = default;
 
         virtual void entityAdded(Entity /*entity*/) {}
         virtual void entityRemoved(Entity /*entity*/) {}
 
         const std::vector<Entity>& getEntities() const { return _entities; }
-        bool contains(Entity entity) const { return entity < MAX_ENTITIES && _entityToIndexMap[entity] != INVALID_INDEX; }
+        bool contains(Entity entity) const { return entity < _entityToIndexMap.size() && _entityToIndexMap[entity] != INVALID_INDEX; }
         Registry* getRegistry() const { return _registry; }
 
     private:
@@ -39,6 +36,10 @@ namespace expecs
 
         void addEntity(Entity entity)
         {
+            if (entity >= _entityToIndexMap.size())
+            {
+                _entityToIndexMap.resize(std::max(_entityToIndexMap.size() * 2, static_cast<size_t>(entity) + 1), INVALID_INDEX);
+            }
             _entityToIndexMap[entity] = _entities.size();
             _entities.push_back(entity);
         }
