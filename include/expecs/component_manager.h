@@ -82,7 +82,7 @@ namespace expecs
         Signature getSignature() const
         {
             ComponentType componentType = ComponentTypeID<T>::id;
-            if (componentType == INVALID_COMPONENT_TYPE)
+            if (componentType == INVALID_COMPONENT_TYPE || componentType >= _componentPools.size() || !_componentPools[componentType])
                 return 0;
 
             Signature componentSignature = 0;
