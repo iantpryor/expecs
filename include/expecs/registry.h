@@ -92,6 +92,24 @@ namespace expecs
             return result;
         }
 
+        template <typename... Ts, typename Func>
+        void each(Func&& func) const
+        {
+            Signature query = (_componentManager->getSignature<Ts>() | ...);
+            each(query, std::forward<Func>(func));
+        }
+
+        template <typename Func>
+        void each(Signature query, Func&& func) const
+        {
+            const auto& candidates = _componentManager->getSmallestPoolEntities(query);
+            for (Entity entity : candidates)
+            {
+                if ((_entityManager->getSignature(entity) & query) == query)
+                    func(entity);
+            }
+        }
+
         template <typename T>
         bool hasComponent(Entity entity) const
         {

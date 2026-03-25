@@ -13,6 +13,22 @@ namespace expecs
     constexpr ComponentType INVALID_COMPONENT_TYPE = std::numeric_limits<ComponentType>::max();
     constexpr uint8_t MAX_COMPONENTS = 64;
 
+    inline ComponentType currentGlobalComponentType = 0;
+    inline std::unordered_map<std::type_index, ComponentType> globalTypeMap;
+
+    inline ComponentType assignGlobalComponentType(std::type_index typeIndex)
+    {
+        auto it = globalTypeMap.find(typeIndex);
+        if (it != globalTypeMap.end())
+            return it->second;
+
+        assert(currentGlobalComponentType < MAX_COMPONENTS && "Exceeded maximum component types");
+        ComponentType id = currentGlobalComponentType;
+        globalTypeMap[typeIndex] = id;
+        currentGlobalComponentType++;
+        return id;
+    }
+
     template <typename T>
     struct ComponentTypeID
     {
@@ -27,14 +43,17 @@ namespace expecs
 
         Signature registerComponentPool(std::type_index typeIndex, std::unique_ptr<ComponentPoolBase> pool)
         {
-            assert(_currentComponentType < MAX_COMPONENTS && "Exceeded maximum component types");
-            _componentPools.push_back(std::move(pool));
+            ComponentType globalId = assignGlobalComponentType(typeIndex);
 
-            _typeMap[typeIndex] = _currentComponentType;
+            if (globalId >= _componentPools.size())
+                _componentPools.resize(globalId + 1);
+
+            assert(!_componentPools[globalId] && "Component type already registered on this registry");
+            _componentPools[globalId] = std::move(pool);
+
+            _typeMap[typeIndex] = globalId;
             Signature componentSignature = 0;
-            componentSignature |= (Signature{1} << _currentComponentType);
-
-            _currentComponentType++;
+            componentSignature |= (Signature{1} << globalId);
 
             return componentSignature;
         }
@@ -42,15 +61,19 @@ namespace expecs
         template <typename T>
         Signature registerComponentType()
         {
-            assert(_currentComponentType < MAX_COMPONENTS && "Exceeded maximum component types");
-            _componentPools.push_back(std::make_unique<ComponentPool<T>>());
+            if (ComponentTypeID<T>::id == INVALID_COMPONENT_TYPE)
+                ComponentTypeID<T>::id = assignGlobalComponentType(std::type_index(typeid(T)));
+            ComponentType globalId = ComponentTypeID<T>::id;
 
-            ComponentTypeID<T>::id = _currentComponentType;
-            _typeMap[std::type_index(typeid(T))] = _currentComponentType;
+            if (globalId >= _componentPools.size())
+                _componentPools.resize(globalId + 1);
+
+            assert(!_componentPools[globalId] && "Component type already registered on this registry");
+            _componentPools[globalId] = std::make_unique<ComponentPool<T>>();
+
+            _typeMap[std::type_index(typeid(T))] = globalId;
             Signature componentSignature = 0;
-            componentSignature |= (Signature{1} << _currentComponentType);
-
-            _currentComponentType++;
+            componentSignature |= (Signature{1} << globalId);
 
             return componentSignature;
         }
@@ -169,14 +192,15 @@ namespace expecs
             componentPool->removeComponent(entity);
         }
 
-        std::vector<Entity> getSmallestPoolEntities(Signature signature) const
+        const std::vector<Entity>& getSmallestPoolEntities(Signature signature) const
         {
+            static const std::vector<Entity> empty;
             ComponentPoolBase* smallest = nullptr;
             size_t smallestSize = SIZE_MAX;
 
-            for (uint8_t bit = 0; bit < _currentComponentType; ++bit)
+            for (uint8_t bit = 0; bit < _componentPools.size(); ++bit)
             {
-                if (signature & (Signature{1} << bit))
+                if ((signature & (Signature{1} << bit)) && _componentPools[bit])
                 {
                     size_t poolSize = _componentPools[bit]->size();
                     if (poolSize < smallestSize)
@@ -188,7 +212,7 @@ namespace expecs
             }
 
             if (!smallest)
-                return {};
+                return empty;
 
             return smallest->getEntities();
         }
@@ -200,15 +224,15 @@ namespace expecs
 
         void entityDestroyed(Entity entity)
         {
-            for (uint32_t i = 0; i < _currentComponentType; i++)
+            for (uint32_t i = 0; i < _componentPools.size(); i++)
             {
-                _componentPools[i]->entityDestroyed(entity);
+                if (_componentPools[i])
+                    _componentPools[i]->entityDestroyed(entity);
             }
         }
 
     private:
         std::vector<std::unique_ptr<ComponentPoolBase>> _componentPools = {};
         std::unordered_map<std::type_index, ComponentType> _typeMap = {};
-        ComponentType _currentComponentType = 0;
     };
 } // namespace expecs

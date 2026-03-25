@@ -22,7 +22,7 @@ namespace expecs
         virtual void* getComponent(Entity entity) = 0;
 
         virtual size_t size() const = 0;
-        virtual std::vector<Entity> getEntities() const = 0;
+        virtual const std::vector<Entity>& getEntities() const = 0;
     };
 
     template <typename T>
@@ -103,7 +103,7 @@ namespace expecs
             return _entities.size();
         }
 
-        std::vector<Entity> getEntities() const override
+        const std::vector<Entity>& getEntities() const override
         {
             return _entities;
         }
