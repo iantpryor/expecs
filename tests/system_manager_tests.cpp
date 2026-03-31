@@ -14,9 +14,9 @@ namespace expecs
             _systemManager = std::make_unique<SystemManager>();
 
             // Movement system requires Position and Velocity
-            Signature movementSignature = 0;
-            movementSignature |= (Signature{1} << 0); // Position component bit
-            movementSignature |= (Signature{1} << 1); // Velocity component bit
+            Signature movementSignature;
+            movementSignature.set(0); // Position component bit
+            movementSignature.set(1); // Velocity component bit
 
             _movementSystem = _systemManager->registerSystem<MovementSystem>(movementSignature);
         }
@@ -33,7 +33,8 @@ namespace expecs
 
     TEST_F(expecs_SystemManagerTest, registerSystem_TypeErased_ReturnsValidSystem)
     {
-        Signature systemSignature = (Signature{1} << 2);
+        Signature systemSignature;
+        systemSignature.set(2);
         auto system = std::make_unique<RenderSystem>();
         auto* raw = system.get();
 
@@ -50,7 +51,8 @@ namespace expecs
 
     TEST_F(expecs_SystemManagerTest, getSystem_TypeErased_ReturnsCorrectSystem)
     {
-        Signature systemSignature = (Signature{1} << 2);
+        Signature systemSignature;
+        systemSignature.set(2);
         auto system = std::make_unique<RenderSystem>();
 
         auto* registered = _systemManager->registerSystem(std::type_index(typeid(RenderSystem)), systemSignature, std::move(system));
@@ -62,9 +64,9 @@ namespace expecs
     TEST_F(expecs_SystemManagerTest, entitySignatureChanged_AddsEntityToSystem)
     {
         Entity entity = 42;
-        Signature entitySignature = 0;
-        entitySignature |= (Signature{1} << 0); // Position
-        entitySignature |= (Signature{1} << 1); // Velocity
+        Signature entitySignature;
+        entitySignature.set(0); // Position
+        entitySignature.set(1); // Velocity
 
         _systemManager->entitySignatureChanged(entity, entitySignature);
 
@@ -75,7 +77,8 @@ namespace expecs
 
     TEST_F(expecs_SystemManagerTest, registerSystem_TypeErased_AddsEntityToSystem)
     {
-        Signature systemSignature = (Signature{1} << 2);
+        Signature systemSignature;
+        systemSignature.set(2);
         auto system = std::make_unique<RenderSystem>();
 
         auto* registered = _systemManager->registerSystem(std::type_index(typeid(RenderSystem)), systemSignature, std::move(system));
@@ -91,8 +94,11 @@ namespace expecs
     TEST_F(expecs_SystemManagerTest, entitySignatureChanged_RemovesEntityFromSystem)
     {
         Entity entity = 42;
-        Signature fullSignature = 0b11;    // Has both Position and Velocity
-        Signature partialSignature = 0b01; // Only Position
+        Signature fullSignature;
+        fullSignature.set(0);
+        fullSignature.set(1);              // Has both Position and Velocity
+        Signature partialSignature;
+        partialSignature.set(0);           // Only Position
 
         // Add entity to system
         _systemManager->entitySignatureChanged(entity, fullSignature);
@@ -107,7 +113,9 @@ namespace expecs
     TEST_F(expecs_SystemManagerTest, entityDestroyed_RemovesFromAllSystems)
     {
         Entity entity = 42;
-        Signature entitySignature = 0b11; // Has both components
+        Signature entitySignature;
+        entitySignature.set(0);
+        entitySignature.set(1); // Has both components
 
         _systemManager->entitySignatureChanged(entity, entitySignature);
         EXPECT_TRUE(_movementSystem->contains(entity));

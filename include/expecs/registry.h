@@ -130,7 +130,7 @@ namespace expecs
         T& addComponent(Entity entity, const T& component)
         {
             auto signature = _entityManager->getSignature(entity);
-            signature |= (Signature{1} << _componentManager->getComponentType<T>());
+            signature.set(_componentManager->getComponentType<T>());
 
             _entityManager->setSignature(entity, signature);
 
@@ -159,7 +159,7 @@ namespace expecs
         void removeComponent(Entity entity)
         {
             auto signature = _entityManager->getSignature(entity);
-            signature &= ~(Signature{1} << _componentManager->getComponentType<T>());
+            signature.reset(_componentManager->getComponentType<T>());
 
             _systemManager->entitySignatureChanged(entity, signature);
 
@@ -171,7 +171,7 @@ namespace expecs
         void removeComponent(Entity entity, std::type_index typeIndex)
         {
             auto signature = _entityManager->getSignature(entity);
-            signature &= ~_componentManager->getSignature(typeIndex);
+            signature.reset(_componentManager->getComponentType(typeIndex));
 
             _systemManager->entitySignatureChanged(entity, signature);
 
@@ -182,11 +182,11 @@ namespace expecs
 
         void removeAllComponents(Entity entity)
         {
-            _systemManager->entitySignatureChanged(entity, 0);
+            _systemManager->entitySignatureChanged(entity, Signature{});
 
             _componentManager->removeAllComponents(entity);
 
-            _entityManager->setSignature(entity, 0);
+            _entityManager->setSignature(entity, Signature{});
         }
 
         template <DerivedFromSystem T, typename... Args>

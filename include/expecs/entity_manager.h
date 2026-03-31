@@ -1,14 +1,20 @@
 #pragma once
 
 #include <algorithm>
+#include <bitset>
 #include <cassert>
 #include <cstdint>
 #include <vector>
 
+#ifndef EXPECS_MAX_COMPONENTS
+#define EXPECS_MAX_COMPONENTS 64
+#endif
+
 namespace expecs
 {
     using Entity = uint32_t;
-    using Signature = uint64_t;
+    constexpr size_t MAX_COMPONENTS = EXPECS_MAX_COMPONENTS;
+    using Signature = std::bitset<MAX_COMPONENTS>;
 
     class EntityManager
     {
@@ -29,7 +35,7 @@ namespace expecs
                 id = _nextEntity++;
                 if (id >= _signatures.size())
                 {
-                    _signatures.resize(std::max(_signatures.size() * 2, static_cast<size_t>(id) + 1), 0);
+                    _signatures.resize(std::max(_signatures.size() * 2, static_cast<size_t>(id) + 1));
                 }
             }
             _aliveCount++;
@@ -38,7 +44,7 @@ namespace expecs
 
         void destroyEntity(Entity entity)
         {
-            _signatures[entity] = 0;
+            _signatures[entity].reset();
             _recycledEntities.push_back(entity);
             _aliveCount--;
         }
@@ -57,7 +63,7 @@ namespace expecs
         {
             if (entity >= _signatures.size())
             {
-                _signatures.resize(std::max(_signatures.size() * 2, static_cast<size_t>(entity) + 1), 0);
+                _signatures.resize(std::max(_signatures.size() * 2, static_cast<size_t>(entity) + 1));
             }
             _signatures[entity] = signature;
         }

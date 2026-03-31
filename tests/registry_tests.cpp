@@ -20,7 +20,7 @@ namespace expecs
             _registry->registerComponent<Health>();
 
             // Register movement system (Position + Velocity)
-            Signature movementSignature = 0;
+            Signature movementSignature;
             movementSignature |= _registry->getComponentSignature<Position>();
             movementSignature |= _registry->getComponentSignature<Velocity>();
 

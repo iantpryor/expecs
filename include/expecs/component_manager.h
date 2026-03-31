@@ -9,9 +9,9 @@
 
 namespace expecs
 {
-    using ComponentType = uint8_t;
+    using ComponentType = uint16_t;
     constexpr ComponentType INVALID_COMPONENT_TYPE = std::numeric_limits<ComponentType>::max();
-    constexpr uint8_t MAX_COMPONENTS = 64;
+    static_assert(MAX_COMPONENTS > 0 && MAX_COMPONENTS <= INVALID_COMPONENT_TYPE, "EXPECS_MAX_COMPONENTS must be between 1 and 65534");
 
     inline ComponentType currentGlobalComponentType = 0;
     inline std::unordered_map<std::type_index, ComponentType> globalTypeMap;
@@ -52,8 +52,8 @@ namespace expecs
             _componentPools[globalId] = std::move(pool);
 
             _typeMap[typeIndex] = globalId;
-            Signature componentSignature = 0;
-            componentSignature |= (Signature{1} << globalId);
+            Signature componentSignature;
+            componentSignature.set(globalId);
 
             return componentSignature;
         }
@@ -72,8 +72,8 @@ namespace expecs
             _componentPools[globalId] = std::make_unique<ComponentPool<T>>();
 
             _typeMap[std::type_index(typeid(T))] = globalId;
-            Signature componentSignature = 0;
-            componentSignature |= (Signature{1} << globalId);
+            Signature componentSignature;
+            componentSignature.set(globalId);
 
             return componentSignature;
         }
@@ -83,21 +83,21 @@ namespace expecs
         {
             ComponentType componentType = ComponentTypeID<T>::id;
             if (componentType == INVALID_COMPONENT_TYPE || componentType >= _componentPools.size() || !_componentPools[componentType])
-                return 0;
+                return Signature{};
 
-            Signature componentSignature = 0;
-            componentSignature |= (Signature{1} << componentType);
+            Signature componentSignature;
+            componentSignature.set(componentType);
 
             return componentSignature;
         }
 
         Signature getSignature(std::type_index typeIndex) const
         {
-            Signature componentSignature = 0;
+            Signature componentSignature;
             auto it = _typeMap.find(typeIndex);
             if (it != _typeMap.end())
             {
-                componentSignature |= (Signature{1} << it->second);
+                componentSignature.set(it->second);
             }
             return componentSignature;
         }
@@ -106,6 +106,14 @@ namespace expecs
         ComponentType getComponentType() const
         {
             return ComponentTypeID<T>::id;
+        }
+
+        ComponentType getComponentType(std::type_index typeIndex) const
+        {
+            auto it = _typeMap.find(typeIndex);
+            if (it != _typeMap.end())
+                return it->second;
+            return INVALID_COMPONENT_TYPE;
         }
 
         std::vector<ComponentType> getRegisteredComponentTypes() const
@@ -200,9 +208,9 @@ namespace expecs
             ComponentPoolBase* smallest = nullptr;
             size_t smallestSize = SIZE_MAX;
 
-            for (uint8_t bit = 0; bit < _componentPools.size(); ++bit)
+            for (size_t bit = 0; bit < _componentPools.size(); ++bit)
             {
-                if ((signature & (Signature{1} << bit)) && _componentPools[bit])
+                if (signature.test(bit) && _componentPools[bit])
                 {
                     size_t poolSize = _componentPools[bit]->size();
                     if (poolSize < smallestSize)

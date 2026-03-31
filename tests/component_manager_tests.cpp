@@ -28,13 +28,13 @@ namespace expecs
         Signature positionSignature = componentManager.registerComponentPool(std::type_index(typeid(Position)), std::move(positionPool));
         Signature velocitySignature = componentManager.registerComponentPool(std::type_index(typeid(Velocity)), std::move(velocityPool));
 
-        EXPECT_NE(positionSignature, 0u);
-        EXPECT_NE(velocitySignature, 0u);
+        EXPECT_TRUE(positionSignature.any());
+        EXPECT_TRUE(velocitySignature.any());
         EXPECT_NE(positionSignature, velocitySignature);
 
         // Each signature should be a single bit
-        EXPECT_EQ(positionSignature & (positionSignature - 1), 0u);
-        EXPECT_EQ(velocitySignature & (velocitySignature - 1), 0u);
+        EXPECT_EQ(positionSignature.count(), 1u);
+        EXPECT_EQ(velocitySignature.count(), 1u);
 
         // Pool should be functional
         Entity entity = 42;
@@ -52,8 +52,8 @@ namespace expecs
         Signature posSignature = componentManager.registerComponentType<Position>();
         Signature velSignature = componentManager.registerComponentType<Velocity>();
 
-        EXPECT_NE(posSignature, 0u);
-        EXPECT_NE(velSignature, 0u);
+        EXPECT_TRUE(posSignature.any());
+        EXPECT_TRUE(velSignature.any());
         EXPECT_NE(posSignature, velSignature);
     }
 
@@ -62,13 +62,13 @@ namespace expecs
         Signature posSignature = _componentManager->getSignature<Position>();
         Signature velSignature = _componentManager->getSignature<Velocity>();
 
-        EXPECT_NE(posSignature, 0u);
-        EXPECT_NE(velSignature, 0u);
+        EXPECT_TRUE(posSignature.any());
+        EXPECT_TRUE(velSignature.any());
         EXPECT_NE(posSignature, velSignature);
 
-        // Should be powers of 2 (single bit set)
-        EXPECT_EQ(posSignature & (posSignature - 1), 0u);
-        EXPECT_EQ(velSignature & (velSignature - 1), 0u);
+        // Should be single bit set
+        EXPECT_EQ(posSignature.count(), 1u);
+        EXPECT_EQ(velSignature.count(), 1u);
     }
 
     TEST_F(expecs_ComponentManagerTest, getSignature_TypeIndex_ReturnsCorrectSignature)
