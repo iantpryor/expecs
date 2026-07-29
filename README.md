@@ -18,7 +18,8 @@ The framework is built around a central Registry that orchestrates three special
 
 * **Push-Model Logic**: Systems maintain their own lists of entities. Membership is updated only when components are added or removed, removing the need for per-frame filtering.
 * **Memory Efficiency**: Component data is stored in pools to maximize CPU cache hits.
-* **Entity Recycling**: Dead entity IDs are placed in a queue for reuse, keeping the entity index space compact.
+* **Entity Recycling**: Dead entity slots are placed in a queue for reuse, keeping the entity index space compact.
+* **Generational Handles**: An `Entity` carries the generation of the slot it was issued from, so a handle to a destroyed entity never reads the entity that recycled into its slot.
 
 ---
 
@@ -88,6 +89,10 @@ registry->addComponent(entity, Velocity(1, 0, 0));
 // Execution
 movementSystem->update();
 
+// Destroying an entity retires the handle, not just the slot
+registry->destroyEntity(entity);
+registry->isAlive(entity); // false, even once another entity recycles into the slot
+
 ```
 
 
@@ -95,3 +100,7 @@ movementSystem->update();
 
 * **Signature Matching**: System membership is determined by a bitwise AND comparison between the entity's signature and the system's required signature.  The signature for a system needs to be explictly set during registration.
 * **Reference Stability**: `getComponent<T>` returns a reference to the component data. Users should not store these references across multiple frames as component relocation may occur in the pool if components are removed and rearranged to keep tight packing.
+* **Entity Handles**: An `Entity` packs a slot index and that slot's generation into 32 bits, 20 index bits and 12 generation bits by default. `EXPECS_ENTITY_INDEX_BITS` moves the split, trading how many entities can exist at once against how often a slot may be recycled. `entity.index()` and `entity.generation()` unpack it, and building one from a bare index is explicit (`Entity(42)`) because that yields the generation 0 handle rather than necessarily a live one.
+* **Stale Handles**: Destroying an entity bumps its slot's generation, so an older handle is no longer alive: `isAlive`, `hasComponent` and a system's `contains` report false, and reading or mutating components through it asserts in debug. A slot that spends its last generation is retired instead of recycled, so a generation never wraps onto a handle still held elsewhere.
+* **Unregistered Components**: Asking for the signature of a component this registry never registered, including one registered only on a different registry, asserts in debug rather than answering with an empty signature that would silently narrow a query. The `std::type_index` overload throws in every configuration.
+* **Lifetime Budget**: The default split allows 1,048,575 entities alive at once and 4096 lifetimes per slot. Retirement permanently consumes an index, so a run can create roughly 2^32 entities in total before the index space is exhausted, at which point creation throws rather than handing out a slot that could alias. Widening `EXPECS_ENTITY_INDEX_BITS` buys concurrent entities at the cost of lifetimes per slot, and narrowing it does the reverse.

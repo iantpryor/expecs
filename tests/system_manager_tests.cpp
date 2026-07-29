@@ -63,7 +63,7 @@ namespace expecs
 
     TEST_F(expecs_SystemManagerTest, entitySignatureChanged_AddsEntityToSystem)
     {
-        Entity entity = 42;
+        Entity entity(42);
         Signature entitySignature;
         entitySignature.set(0); // Position
         entitySignature.set(1); // Velocity
@@ -83,7 +83,7 @@ namespace expecs
 
         auto* registered = _systemManager->registerSystem(std::type_index(typeid(RenderSystem)), systemSignature, std::move(system));
 
-        Entity entity = 10;
+        Entity entity(10);
         _systemManager->entitySignatureChanged(entity, systemSignature);
 
         EXPECT_EQ(registered->getEntities().size(), 1u);
@@ -93,7 +93,7 @@ namespace expecs
 
     TEST_F(expecs_SystemManagerTest, entitySignatureChanged_RemovesEntityFromSystem)
     {
-        Entity entity = 42;
+        Entity entity(42);
         Signature fullSignature;
         fullSignature.set(0);
         fullSignature.set(1);              // Has both Position and Velocity
@@ -112,7 +112,7 @@ namespace expecs
 
     TEST_F(expecs_SystemManagerTest, entityDestroyed_RemovesFromAllSystems)
     {
-        Entity entity = 42;
+        Entity entity(42);
         Signature entitySignature;
         entitySignature.set(0);
         entitySignature.set(1); // Has both components

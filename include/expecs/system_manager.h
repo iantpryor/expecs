@@ -23,7 +23,14 @@ namespace expecs
         virtual void entityRemoved(Entity /*entity*/) {}
 
         const std::vector<Entity>& getEntities() const { return _entities; }
-        bool contains(Entity entity) const { return entity < _entityToIndexMap.size() && _entityToIndexMap[entity] != INVALID_INDEX; }
+        bool contains(Entity entity) const
+        {
+            if (entity.index() >= _entityToIndexMap.size())
+                return false;
+
+            size_t index = _entityToIndexMap[entity.index()];
+            return index != INVALID_INDEX && _entities[index] == entity;
+        }
         Registry* getRegistry() const { return _registry; }
 
     private:
@@ -36,17 +43,17 @@ namespace expecs
 
         void addEntity(Entity entity)
         {
-            if (entity >= _entityToIndexMap.size())
+            if (entity.index() >= _entityToIndexMap.size())
             {
-                _entityToIndexMap.resize(std::max(_entityToIndexMap.size() * 2, static_cast<size_t>(entity) + 1), INVALID_INDEX);
+                _entityToIndexMap.resize(std::max(_entityToIndexMap.size() * 2, static_cast<size_t>(entity.index()) + 1), INVALID_INDEX);
             }
-            _entityToIndexMap[entity] = _entities.size();
+            _entityToIndexMap[entity.index()] = _entities.size();
             _entities.push_back(entity);
         }
 
         void removeEntity(Entity entity)
         {
-            size_t indexToRemove = _entityToIndexMap[entity];
+            size_t indexToRemove = _entityToIndexMap[entity.index()];
             size_t lastIndex = _entities.size() - 1;
 
             if (indexToRemove != lastIndex)
@@ -54,12 +61,12 @@ namespace expecs
                 // Move last element to the position of removed element
                 Entity lastEntity = _entities[lastIndex];
                 _entities[indexToRemove] = lastEntity;
-                _entityToIndexMap[lastEntity] = indexToRemove;
+                _entityToIndexMap[lastEntity.index()] = indexToRemove;
             }
 
             // Remove the last element
             _entities.pop_back();
-            _entityToIndexMap[entity] = INVALID_INDEX;
+            _entityToIndexMap[entity.index()] = INVALID_INDEX;
         }
     };
 

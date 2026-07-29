@@ -96,19 +96,21 @@ namespace expecs
 
     TEST_F(expecs_PerformanceTest, getComponent_Templated)
     {
+        std::vector<Entity> entities;
         for (int i = 0; i < NUM_ENTITIES; ++i)
         {
             Entity entity = _registry->createEntity();
             _registry->addComponent(entity, Position((float)i, (float)i, (float)i));
+            entities.push_back(entity);
         }
 
         std::vector<long long> durations;
         for (int iter = 0; iter < NUM_ITERATIONS; ++iter)
         {
             auto start = std::chrono::high_resolution_clock::now();
-            for (Entity e = 0; e < NUM_ENTITIES; ++e)
+            for (Entity entity : entities)
             {
-                volatile auto& pos = _registry->getComponent<Position>(e);
+                volatile auto& pos = _registry->getComponent<Position>(entity);
                 (void)pos;
             }
             auto end = std::chrono::high_resolution_clock::now();
@@ -124,19 +126,21 @@ namespace expecs
 
     TEST_F(expecs_PerformanceTest, getComponent_TypeErased)
     {
+        std::vector<Entity> entities;
         for (int i = 0; i < NUM_ENTITIES; ++i)
         {
             Entity entity = _registry->createEntity();
             _registry->addComponent(entity, Position((float)i, (float)i, (float)i));
+            entities.push_back(entity);
         }
 
         std::vector<long long> durations;
         for (int iter = 0; iter < NUM_ITERATIONS; ++iter)
         {
             auto start = std::chrono::high_resolution_clock::now();
-            for (Entity e = 0; e < NUM_ENTITIES; ++e)
+            for (Entity entity : entities)
             {
-                volatile auto* pos = static_cast<Position*>(_registry->getComponent(e, std::type_index(typeid(Position))));
+                volatile auto* pos = static_cast<Position*>(_registry->getComponent(entity, std::type_index(typeid(Position))));
                 (void)pos;
             }
             auto end = std::chrono::high_resolution_clock::now();
@@ -152,19 +156,21 @@ namespace expecs
 
     TEST_F(expecs_PerformanceTest, hasComponent_Templated)
     {
+        std::vector<Entity> entities;
         for (int i = 0; i < NUM_ENTITIES; ++i)
         {
             Entity entity = _registry->createEntity();
             _registry->addComponent(entity, Position((float)i, (float)i, (float)i));
+            entities.push_back(entity);
         }
 
         std::vector<long long> durations;
         for (int iter = 0; iter < NUM_ITERATIONS; ++iter)
         {
             auto start = std::chrono::high_resolution_clock::now();
-            for (Entity e = 0; e < NUM_ENTITIES; ++e)
+            for (Entity entity : entities)
             {
-                volatile bool has = _registry->hasComponent<Position>(e);
+                volatile bool has = _registry->hasComponent<Position>(entity);
                 (void)has;
             }
             auto end = std::chrono::high_resolution_clock::now();
@@ -180,19 +186,21 @@ namespace expecs
 
     TEST_F(expecs_PerformanceTest, hasComponent_TypeErased)
     {
+        std::vector<Entity> entities;
         for (int i = 0; i < NUM_ENTITIES; ++i)
         {
             Entity entity = _registry->createEntity();
             _registry->addComponent(entity, Position((float)i, (float)i, (float)i));
+            entities.push_back(entity);
         }
 
         std::vector<long long> durations;
         for (int iter = 0; iter < NUM_ITERATIONS; ++iter)
         {
             auto start = std::chrono::high_resolution_clock::now();
-            for (Entity e = 0; e < NUM_ENTITIES; ++e)
+            for (Entity entity : entities)
             {
-                volatile bool has = _registry->hasComponent(e, std::type_index(typeid(Position)));
+                volatile bool has = _registry->hasComponent(entity, std::type_index(typeid(Position)));
                 (void)has;
             }
             auto end = std::chrono::high_resolution_clock::now();

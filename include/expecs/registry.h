@@ -3,6 +3,7 @@
 #include "entity_manager.h"
 #include "system_manager.h"
 
+#include <cassert>
 #include <memory>
 
 namespace expecs
@@ -30,6 +31,11 @@ namespace expecs
             _entityManager->destroyEntity(entity);
         }
 
+        bool isAlive(Entity entity) const
+        {
+            return _entityManager->isAlive(entity);
+        }
+
         uint32_t getEntityCount() const
         {
             return _entityManager->getEntityCount();
@@ -54,11 +60,13 @@ namespace expecs
         template <typename T>
         T& getComponent(Entity entity) const
         {
+            assert(_entityManager->isAlive(entity) && "Entity is not alive");
             return _componentManager->getComponent<T>(entity);
         }
 
         void* getComponent(Entity entity, std::type_index typeIndex)
         {
+            assert(_entityManager->isAlive(entity) && "Entity is not alive");
             return _componentManager->getComponent(entity, typeIndex);
         }
 

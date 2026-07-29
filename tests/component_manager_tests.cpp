@@ -37,7 +37,7 @@ namespace expecs
         EXPECT_EQ(velocitySignature.count(), 1u);
 
         // Pool should be functional
-        Entity entity = 42;
+        Entity entity(42);
         Position position(1.0f, 2.0f, 3.0f);
         componentManager.addComponent(entity, position);
 
@@ -81,7 +81,7 @@ namespace expecs
 
     TEST_F(expecs_ComponentManagerTest, addComponent_StoresComponent)
     {
-        Entity entity = 42;
+        Entity entity(42);
         Position pos(1.0f, 2.0f, 3.0f);
 
         auto& addedPos = _componentManager->addComponent(entity, pos);
@@ -92,7 +92,7 @@ namespace expecs
 
     TEST_F(expecs_ComponentManagerTest, addComponent_TypeErased_StoresComponent)
     {
-        Entity entity = 42;
+        Entity entity(42);
         Position position(1.0f, 2.0f, 3.0f);
 
         void* ptr = _componentManager->addComponent(entity, std::type_index(typeid(Position)), &position);
@@ -105,7 +105,7 @@ namespace expecs
 
     TEST_F(expecs_ComponentManagerTest, getComponent_ReturnsCorrectComponent)
     {
-        Entity entity = 42;
+        Entity entity(42);
         Position pos(10.0f, 20.0f, 30.0f);
 
         _componentManager->addComponent(entity, pos);
@@ -120,7 +120,7 @@ namespace expecs
 
     TEST_F(expecs_ComponentManagerTest, getComponent_TypeErased_ReturnsCorrectComponent)
     {
-        Entity entity = 42;
+        Entity entity(42);
         Position position(10.0f, 20.0f, 30.0f);
 
         _componentManager->addComponent(entity, position);
@@ -135,9 +135,51 @@ namespace expecs
         EXPECT_EQ(_componentManager->getComponent<Position>(entity).x, 99.0f);
     }
 
+#ifndef NDEBUG
+    TEST_F(expecs_ComponentManagerTest, getSignature_Asserts_WhenTypeNotRegistered)
+    {
+        struct UnregisteredComponent
+        {
+        };
+
+        EXPECT_DEATH(_componentManager->getSignature<UnregisteredComponent>(), "Component type not registered");
+    }
+
+    TEST_F(expecs_ComponentManagerTest, getSignature_Asserts_WhenTypeRegisteredOnAnotherManager)
+    {
+        struct ForeignComponent
+        {
+        };
+
+        ComponentManager other;
+        other.registerComponentType<ForeignComponent>();
+
+        EXPECT_DEATH(_componentManager->getSignature<ForeignComponent>(), "Component type not registered");
+    }
+#endif
+
+    TEST_F(expecs_ComponentManagerTest, hasComponent_ReturnsFalse_ForStaleHandle)
+    {
+        Entity entity(42);
+        Entity recycled(42, 1);
+
+        _componentManager->addComponent(entity, Position(1, 2, 3));
+        EXPECT_TRUE(_componentManager->hasComponent<Position>(entity));
+
+        EXPECT_FALSE(_componentManager->hasComponent<Position>(recycled));
+
+        _componentManager->entityDestroyed(entity);
+        _componentManager->addComponent(recycled, Position(9, 9, 9));
+
+        EXPECT_FALSE(_componentManager->hasComponent<Position>(entity));
+        EXPECT_FALSE(_componentManager->hasComponent(entity, std::type_index(typeid(Position))));
+        EXPECT_TRUE(_componentManager->hasComponent<Position>(recycled));
+        EXPECT_EQ(_componentManager->getComponent<Position>(recycled), Position(9, 9, 9));
+    }
+
     TEST_F(expecs_ComponentManagerTest, hasComponent_ReturnsFalse_WhenTypeNotRegistered)
     {
-        Entity entity = 42;
+        Entity entity(42);
         struct UnregisteredComponent
         {
         };
@@ -147,7 +189,7 @@ namespace expecs
 
     TEST_F(expecs_ComponentManagerTest, hasComponent_ReturnsCorrectStatus)
     {
-        Entity entity = 42;
+        Entity entity(42);
 
         EXPECT_FALSE(_componentManager->hasComponent<Position>(entity));
 
@@ -162,7 +204,7 @@ namespace expecs
 
     TEST_F(expecs_ComponentManagerTest, hasComponent_TypeIndex_ReturnsCorrectStatus)
     {
-        Entity entity = 42;
+        Entity entity(42);
 
         EXPECT_FALSE(_componentManager->hasComponent(entity, std::type_index(typeid(Position))));
 
@@ -173,7 +215,7 @@ namespace expecs
 
     TEST_F(expecs_ComponentManagerTest, removeComponent_RemovesComponent)
     {
-        Entity entity = 42;
+        Entity entity(42);
         _componentManager->addComponent(entity, Position());
 
         EXPECT_TRUE(_componentManager->hasComponent<Position>(entity));
@@ -187,7 +229,7 @@ namespace expecs
 
     TEST_F(expecs_ComponentManagerTest, entityDestroyed_RemovesAllComponents)
     {
-        Entity entity = 42;
+        Entity entity(42);
 
         _componentManager->addComponent(entity, Position());
         _componentManager->addComponent(entity, Velocity());

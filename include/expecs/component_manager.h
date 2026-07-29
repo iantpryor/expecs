@@ -11,7 +11,7 @@ namespace expecs
 {
     using ComponentType = uint16_t;
     constexpr ComponentType INVALID_COMPONENT_TYPE = std::numeric_limits<ComponentType>::max();
-    static_assert(MAX_COMPONENTS > 0 && MAX_COMPONENTS <= INVALID_COMPONENT_TYPE, "EXPECS_MAX_COMPONENTS must be between 1 and 65534");
+    static_assert(MAX_COMPONENTS > 0 && MAX_COMPONENTS <= INVALID_COMPONENT_TYPE, "EXPECS_MAX_COMPONENTS must be between 1 and 65535");
 
     inline ComponentType currentGlobalComponentType = 0;
     inline std::unordered_map<std::type_index, ComponentType> globalTypeMap;
@@ -82,8 +82,7 @@ namespace expecs
         Signature getSignature() const
         {
             ComponentType componentType = ComponentTypeID<T>::id;
-            if (componentType == INVALID_COMPONENT_TYPE || componentType >= _componentPools.size() || !_componentPools[componentType])
-                return Signature{};
+            assert(componentType < _componentPools.size() && _componentPools[componentType] && "Component type not registered");
 
             Signature componentSignature;
             componentSignature.set(componentType);
@@ -94,11 +93,7 @@ namespace expecs
         Signature getSignature(std::type_index typeIndex) const
         {
             Signature componentSignature;
-            auto it = _typeMap.find(typeIndex);
-            if (it != _typeMap.end())
-            {
-                componentSignature.set(it->second);
-            }
+            componentSignature.set(_typeMap.at(typeIndex));
             return componentSignature;
         }
 
@@ -130,7 +125,7 @@ namespace expecs
         T& getComponent(Entity entity)
         {
             ComponentType componentTypeBit = ComponentTypeID<T>::id;
-            assert(componentTypeBit != INVALID_COMPONENT_TYPE && componentTypeBit < _componentPools.size() && _componentPools[componentTypeBit] && "Component type not registered");
+            assert(componentTypeBit < _componentPools.size() && _componentPools[componentTypeBit] && "Component type not registered");
             auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
             return componentPool->get(entity);
@@ -146,7 +141,7 @@ namespace expecs
         bool hasComponent(Entity entity) const
         {
             ComponentType componentTypeBit = ComponentTypeID<T>::id;
-            if (componentTypeBit == INVALID_COMPONENT_TYPE || componentTypeBit >= _componentPools.size() || !_componentPools[componentTypeBit])
+            if (componentTypeBit >= _componentPools.size() || !_componentPools[componentTypeBit])
                 return false;
             auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
@@ -172,7 +167,7 @@ namespace expecs
         T& addComponent(Entity entity, const T& component)
         {
             ComponentType componentTypeBit = ComponentTypeID<T>::id;
-            assert(componentTypeBit != INVALID_COMPONENT_TYPE && componentTypeBit < _componentPools.size() && _componentPools[componentTypeBit] && "Component type not registered");
+            assert(componentTypeBit < _componentPools.size() && _componentPools[componentTypeBit] && "Component type not registered");
             auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
 
             return componentPool->add(entity, component);
@@ -188,7 +183,7 @@ namespace expecs
         void removeComponent(Entity entity)
         {
             ComponentType componentTypeBit = ComponentTypeID<T>::id;
-            assert(componentTypeBit != INVALID_COMPONENT_TYPE && componentTypeBit < _componentPools.size() && _componentPools[componentTypeBit] && "Component type not registered");
+            assert(componentTypeBit < _componentPools.size() && _componentPools[componentTypeBit] && "Component type not registered");
 
             auto componentPool = static_cast<ComponentPool<T>*>(_componentPools[componentTypeBit].get());
             componentPool->removeComponent(entity);

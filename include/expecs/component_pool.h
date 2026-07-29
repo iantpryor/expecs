@@ -2,7 +2,6 @@
 #include "entity_manager.h"
 
 #include <algorithm>
-#include <cassert>
 #include <limits>
 #include <vector>
 
@@ -34,7 +33,7 @@ namespace expecs
 
         T& get(Entity entity)
         {
-            return _componentData[_entityToIndexMap[entity]];
+            return _componentData[_entityToIndexMap[entity.index()]];
         }
 
         void* getComponent(Entity entity) override
@@ -44,7 +43,11 @@ namespace expecs
 
         bool hasComponent(Entity entity) const override
         {
-            return entity < _entityToIndexMap.size() && _entityToIndexMap[entity] != INVALID_INDEX;
+            if (entity.index() >= _entityToIndexMap.size())
+                return false;
+
+            size_t index = _entityToIndexMap[entity.index()];
+            return index != INVALID_INDEX && _entities[index] == entity;
         }
 
         T& add(Entity entity, const T& component)
@@ -52,13 +55,13 @@ namespace expecs
             size_t newIndex = _componentData.size();
             _componentData.push_back(component);
 
-            if (entity >= _entityToIndexMap.size())
+            if (entity.index() >= _entityToIndexMap.size())
             {
-                size_t newSize = std::max(_entityToIndexMap.size() * 2, static_cast<size_t>(entity) + 1);
+                size_t newSize = std::max(_entityToIndexMap.size() * 2, static_cast<size_t>(entity.index()) + 1);
                 _entityToIndexMap.resize(newSize, INVALID_INDEX);
             }
 
-            _entityToIndexMap[entity] = newIndex;
+            _entityToIndexMap[entity.index()] = newIndex;
             _entities.push_back(entity);
 
             return _componentData[newIndex];
@@ -71,7 +74,7 @@ namespace expecs
 
         void removeComponent(Entity entity) override
         {
-            size_t indexToRemove = _entityToIndexMap[entity];
+            size_t indexToRemove = _entityToIndexMap[entity.index()];
             size_t lastIndex = _componentData.size() - 1;
 
             if (indexToRemove != lastIndex)
@@ -81,12 +84,12 @@ namespace expecs
 
                 _componentData[indexToRemove] = std::move(_componentData[lastIndex]);
                 _entities[indexToRemove] = lastEntity;
-                _entityToIndexMap[lastEntity] = indexToRemove;
+                _entityToIndexMap[lastEntity.index()] = indexToRemove;
             }
 
             // Remove the last element
             _componentData.pop_back();
-            _entityToIndexMap[entity] = INVALID_INDEX;
+            _entityToIndexMap[entity.index()] = INVALID_INDEX;
             _entities.pop_back();
         }
 

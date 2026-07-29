@@ -2,7 +2,6 @@
 
 #include "mock_objects.h"
 
-#include <chrono>
 #include <gtest/gtest.h>
 
 namespace expecs
@@ -25,6 +24,18 @@ namespace expecs
             movementSignature |= _registry->getComponentSignature<Velocity>();
 
             _movementSystem = _registry->registerSystem<MovementSystem>(movementSignature);
+        }
+
+        Entity makeStaleHandle()
+        {
+            Entity stale = _registry->createEntity();
+            _registry->addComponent(stale, Position(1, 2, 3));
+            _registry->destroyEntity(stale);
+
+            Entity recycled = _registry->createEntity();
+            _registry->addComponent(recycled, Position(9, 9, 9));
+
+            return stale;
         }
 
         std::unique_ptr<Registry> _registry;
@@ -218,6 +229,85 @@ namespace expecs
         EXPECT_TRUE(std::find(entitiesWithHealth.begin(), entitiesWithHealth.end(), player) != entitiesWithHealth.end());
         EXPECT_TRUE(std::find(entitiesWithHealth.begin(), entitiesWithHealth.end(), staticObject) != entitiesWithHealth.end());
     }
+
+    TEST_F(expecs_RegistryTest, staleHandle_DoesNotReachRecycledEntity)
+    {
+        Entity stale = _registry->createEntity();
+        _registry->addComponent(stale, Position(1, 2, 3));
+        _registry->addComponent(stale, Velocity(1, 0, 0));
+        _registry->destroyEntity(stale);
+
+        Entity recycled = _registry->createEntity();
+        _registry->addComponent(recycled, Position(9, 9, 9));
+        _registry->addComponent(recycled, Velocity(9, 0, 0));
+
+        EXPECT_EQ(recycled.index(), stale.index());
+        EXPECT_NE(recycled, stale);
+
+        EXPECT_FALSE(_registry->isAlive(stale));
+        EXPECT_TRUE(_registry->isAlive(recycled));
+
+        EXPECT_FALSE(_registry->hasComponent<Position>(stale));
+        EXPECT_FALSE(_registry->hasComponent(stale, std::type_index(typeid(Position))));
+        EXPECT_FALSE(_registry->hasComponent(stale, ComponentTypeID<Position>::id));
+        EXPECT_FALSE(_movementSystem->contains(stale));
+
+        EXPECT_TRUE(_registry->hasComponent<Position>(recycled));
+        EXPECT_TRUE(_registry->hasComponent(recycled, ComponentTypeID<Position>::id));
+        EXPECT_TRUE(_movementSystem->contains(recycled));
+        EXPECT_EQ(_registry->getComponent<Position>(recycled), Position(9, 9, 9));
+    }
+
+#ifndef NDEBUG
+    TEST_F(expecs_RegistryTest, getComponent_Asserts_ForStaleHandle)
+    {
+        Entity stale = makeStaleHandle();
+        EXPECT_DEATH(_registry->getComponent<Position>(stale), "Entity is not alive");
+    }
+
+    TEST_F(expecs_RegistryTest, addComponent_Asserts_ForStaleHandle)
+    {
+        Entity stale = makeStaleHandle();
+        EXPECT_DEATH(_registry->addComponent(stale, Velocity(1, 0, 0)), "Entity is not alive");
+    }
+
+    TEST_F(expecs_RegistryTest, removeComponent_Asserts_ForStaleHandle)
+    {
+        Entity stale = makeStaleHandle();
+        EXPECT_DEATH(_registry->removeComponent<Position>(stale), "Entity is not alive");
+    }
+
+    TEST_F(expecs_RegistryTest, addComponent_TypeErased_Asserts_ForStaleHandle)
+    {
+        Entity stale = makeStaleHandle();
+        Velocity velocity(1, 0, 0);
+        EXPECT_DEATH(_registry->addComponent(stale, std::type_index(typeid(Velocity)), &velocity), "Entity is not alive");
+    }
+
+    TEST_F(expecs_RegistryTest, getComponent_TypeErased_Asserts_ForStaleHandle)
+    {
+        Entity stale = makeStaleHandle();
+        EXPECT_DEATH(_registry->getComponent(stale, std::type_index(typeid(Position))), "Entity is not alive");
+    }
+
+    TEST_F(expecs_RegistryTest, destroyEntity_Asserts_ForStaleHandle)
+    {
+        Entity stale = makeStaleHandle();
+        EXPECT_DEATH(_registry->destroyEntity(stale), "Entity is not alive");
+    }
+
+    TEST_F(expecs_RegistryTest, getEntitiesWithComponents_Asserts_WhenTypeNotRegistered)
+    {
+        struct Unregistered
+        {
+        };
+
+        Entity entity = _registry->createEntity();
+        _registry->addComponent(entity, Position());
+
+        EXPECT_DEATH((_registry->getEntitiesWithComponents<Position, Unregistered>()), "Component type not registered");
+    }
+#endif
 
     TEST_F(expecs_RegistryTest, getEntitiesWithComponents_MultipleComponents)
     {
